@@ -25,16 +25,6 @@ enum SearchType: String, CaseIterable {
 }
 
 
-struct llmConfig {
-    static let apiUrl: String = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-1.5B"
-    static let apiToken: String = "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"
-    static let authorization: String = "Bearer \(apiToken)"
-    static let temperature: Double = 0.8
-    static let maxNewTokens: Int = 50
-    static let seed: Int = 32
-    static let promt: String = "bạn là trợ lý ngôn ngũ, nhiệm vụ của bạn là dịch câu sang tiếng trung nếu câu đầu vào là tiếng việt, nếu câu đầu vào không phải tiếng việt thì dịch sang tiếng trung."
-}
-
 
 struct csvConfig {
     static let csvFileName: String = "hsk"
@@ -52,3 +42,24 @@ struct WordEntry {
     let examplePinyin: String
     let exampleMeaning: String
 }
+
+
+enum Language: String, CaseIterable {
+    case vietnamese = "vi-VN"
+    case english = "en-US"
+    case chinese = "zh-CN"
+    
+    var flag: String {
+        switch self {
+        case .vietnamese: return "🇻🇳"
+        case .english: return "🇬🇧"
+        case .chinese: return "🇨🇳"
+        }
+    }
+    
+    var localeIdentifier: String {
+        return self.rawValue
+    }
+}
+
+

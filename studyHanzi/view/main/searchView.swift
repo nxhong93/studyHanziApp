@@ -9,11 +9,13 @@ import SwiftUI
 import Translation
 import NaturalLanguage
 import FirebaseAuth
-
+import AVFoundation
+import Speech
 
 
 struct searchView: View {
     
+    @FocusState private var isTextFieldFocused: Bool
     @Binding var isDarkMode: Bool
     @State private var searchText: String = ""
     @State private var selectedSearchType: SearchType = .online
@@ -21,165 +23,345 @@ struct searchView: View {
     @State private var showingSearchMenu: Bool = false
     @State private var configuration: TranslationSession.Configuration?
     @State private var searchSuggestions: [String] = []
+    @State private var isLoading: Bool = false
     
+    @State private var isRecording = false
+    @State private var selectedLanguage: Language = .vietnamese
+    @State private var audioEngine = AVAudioEngine()
+    @State private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    @State private var recognitionTask: SFSpeechRecognitionTask?
+    @State private var speechRecognizer: SFSpeechRecognizer?
+    @State private var dragOffset = CGSize.zero
     
     
     var dictionary: [WordEntry] = CSVHelper.loadCSV(fileName: csvConfig.csvFileName)
-    let huggingFaceApi = HuggingFaceApi(token: llmConfig.apiToken)
+    let llmApi = llmService()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack() {
-                Menu {
-                    ForEach(SearchType.allCases, id: \.self) { type in
-                        Button(action: {
-                            selectedSearchType = type
-                            performSearch()
-                            searchText = ""
-                        }) {
-                            HStack {
-                                Image(systemName: type.icon)
-                                    .font(.body)
-                                    .foregroundColor(isDarkMode ? .white : .blue)
-                                Text(type.rawValue.capitalized)
-                                    .font(.body)
-                                    .foregroundColor(isDarkMode ? .white : .primary)
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.title2)
-                        .foregroundColor(isDarkMode ? .white : .blue)
-                }
-                .padding(.leading, 4)
-                .environment(\.colorScheme, isDarkMode ? .dark : .light)
+            searchBar
+            ZStack {
                 
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 40)
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(isDarkMode ? .white : .gray)
-                            .padding(.leading, 16)
-                        TextField("Search", text: $searchText)
-                            .foregroundColor(isDarkMode ? .white : .black)
-                            .onChange(of: searchText) { oldText, newText in
-                                if selectedSearchType == .offline {
-                                    fetchSearchSuggestions(for: newText)
-                                } else {
-                                    searchSuggestions.removeAll()
-                                }
-                            }
-                            .onSubmit {
-                                performSearch()
-                                searchText = ""
-                                searchSuggestions.removeAll()
-                            }
-                            .padding(.horizontal, 8)
+                VStack {
+                    if !searchSuggestions.isEmpty && selectedSearchType == .offline {
+                        suggestionList
                     }
-                }
-                .padding(.trailing, 16)
-            }
-            .padding(.leading)
-            
-            if !searchSuggestions.isEmpty && selectedSearchType == .offline {
-                List {
-                    ForEach(searchSuggestions, id: \.self) { suggestion in
-                        Button(action: {
-                            searchText = suggestion
-                            searchSuggestions.removeAll()
-                            performSearch()
-                            searchText = ""
-                        }) {
-                            Text(suggestion)
-                                .foregroundColor(isDarkMode ? .white : .primary)
-                        }
-                    }
-                }
-                .listStyle(PlainListStyle())
-                .frame(maxWidth: 200)
-                .environment(\.colorScheme, isDarkMode ? .dark : .light)
-                .cornerRadius(8)
-                .padding(.horizontal)
-            }
-            
-            ScrollView {
-                VStack(spacing: 8) {
-                    ForEach(searchResults, id: \.self) { result in
-                        Text(result)
+                    if isLoading && selectedSearchType == .llm {
+                        ProgressView("...")
                             .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundColor(isDarkMode ? .white : .primary)
-                            .cornerRadius(8)
+                    } else {
+                        resultView
                     }
+                    Spacer()
                 }
-                .padding(.horizontal)
+                languageMenu
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             }
-            Spacer()
         }
         .background(isDarkMode ? .black : .white)
         .translationTask(configuration) { session in
-            do {
-                let response = try await session.translate(searchText)
-                searchResults = [response.targetText]
-            } catch {
-                print("Translation error: \(error)")
-                searchResults = ["Translation in error!"]
+            guard selectedSearchType == .online else { return }
+            Task { @MainActor in
+                do {
+                    let response = try await session.translate(searchText)
+                    searchResults = [searchText + "\n" + response.targetText]
+                    searchText = ""
+                } catch let error as TranslationError {
+                    searchResults = ["Translation failed: \(error.localizedDescription)"]
+                } catch {
+                    searchResults = ["An unknown error occurred."]
+                }
+                isLoading = false
             }
+        }
+        .onAppear {
+            requestAudioPermissions()
+            setupSpeechRecognizer(for: selectedLanguage.localeIdentifier)
+        }
+        .onChange(of: selectedLanguage) {_, _ in
+            setupSpeechRecognizer(for: selectedLanguage.localeIdentifier)
         }
     }
     
     private func fetchSearchSuggestions(for query: String) {
-            guard !query.isEmpty else {
-                searchSuggestions.removeAll()
-                return
-            }
+        guard !query.isEmpty else {
+            searchSuggestions.removeAll()
+            return
+        }
 
         let allSuggestions = CSVHelper.suggesWord(in: dictionary, for: query)
         searchSuggestions = allSuggestions.filter { $0 != query }
     }
     
     private func performSearch() {
-        searchSuggestions.removeAll()
+        let trimmedText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else {
+            searchResults = ["Please enter text to translate."]
+            return
+        }
+        
+        isLoading = true
         switch selectedSearchType {
             case .online:
-                TranslationHelper.onlineTranslate(searchText: searchText) { config, results in
-                    self.configuration = config
-                    self.searchResults = results
+                TranslationHelper.onlineTranslate(searchText: trimmedText) { newConfig, _ in
+                    if let newConfig = newConfig {
+                        if configuration == nil || configuration != newConfig {
+                            configuration = newConfig
+                        } else {
+                            configuration?.invalidate()
+                        }
+                    } else {
+                        searchResults = ["Translation configuration failed."]
+                        isLoading = false
+                    }
                 }
+
+
             case .offline:
-                searchResults = CSVHelper.searchWord(in: dictionary, for: searchText)
+                searchResults = CSVHelper.searchWord(in: dictionary, for: trimmedText)
+                isLoading = false
+                searchSuggestions.removeAll()
+                searchText = ""
             case .llm:
-                performLlmTranslation(for: searchText)
+                llmApi.runLlmQuery(inputText: trimmedText) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                            case .success(let response):
+                                searchResults = [response]
+                            case .failure(let error):
+                                searchResults = ["LLm error: \(error.localizedDescription)"]
+                            
+                        }
+                        isLoading = false
+                    }
+                }
+                searchResults = [""]
+                searchText = ""
             case .image:
                 searchResults = [""]
+                isLoading = false
         }
     }
     
-    private func performLlmTranslation(for text: String) {
+    private func clearSearch() {
+        searchText = ""
+        searchResults = []
+        searchSuggestions = []
+    }
+    
+    private var searchBar: some View {
+        HStack() {
+            Menu {
+                ForEach(SearchType.allCases, id: \.self) { type in
+                    Button(action: {
+                        selectedSearchType = type
+                        clearSearch()
+                    }) {
+                        HStack {
+                            Image(systemName: type.icon)
+                                .font(.body)
+                                .foregroundColor(isDarkMode ? .white : .blue)
+                            Text(type.rawValue.capitalized)
+                                .font(.body)
+                                .foregroundColor(isDarkMode ? .white : .primary)
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "line.3.horizontal")
+                    .font(.title2)
+                    .foregroundColor(isDarkMode ? .white : .blue)
+            }
+            .padding(.leading, 4)
+            .environment(\.colorScheme, isDarkMode ? .dark : .light)
+            
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 40)
+                HStack {
+                    Button(action: {
+                        performSearch()
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(isDarkMode ? .white : .gray)
+                            .padding(.leading, 16)
+                    }
+                    TextField("Search", text: $searchText)
+                        .foregroundColor(isDarkMode ? .white : .black)
+                        .focused($isTextFieldFocused)
+                        .onChange(of: searchText) { oldText, newText in
+                            if selectedSearchType == .offline {
+                                fetchSearchSuggestions(for: newText)
+                            } else {
+                                searchSuggestions.removeAll()
+                            }
+                        }
+                        .onSubmit {
+                            performSearch()
+                            searchSuggestions.removeAll()
+                            isTextFieldFocused = false
+                        }
+                        .padding(.horizontal, 8)
+                    
+                    Button(action: toggleRecording) {
+                       Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle")
+                           .font(.title2)
+                           .foregroundColor(isDarkMode ? .white : .blue)
+                           .accessibilityLabel(isRecording ? "Stop Recording" : "Start Recording")
+                   }
+                   .padding(.leading, 4)
+                }
+            }
+            .padding(.trailing, 16)
+        }
+        .padding(.leading)
         
-        let payload: [String: Any] = [
-            "inputs": llmConfig.promt,
-            "parameters": [
-                "temperature": llmConfig.temperature,
-                "max_new_token": llmConfig.maxNewTokens,
-                "seed": llmConfig.seed
-            ]
-        ]
-        
-        huggingFaceApi.query(payload: payload) {result in
-            DispatchQueue.main.async {
-                switch result {
-                    case .success(let generatedText):
-                
-                        self.searchResults = [generatedText]
-                    case .failure(let error):
-                        self.searchResults = ["Error: \(error.localizedDescription)"]
+    }
+    
+    private var languageMenu: some View {
+        Menu {
+            ForEach(Language.allCases, id: \.self) { language in
+                Button(action: {
+                    selectedLanguage = language
+                    setupSpeechRecognizer(for: language.localeIdentifier)
+                }) {
+                    Text(language.flag)
+                }
+            }
+        } label: {
+            Image(systemName: "globe")
+                .font(.title2)
+                .foregroundColor(isDarkMode ? .white : .blue)
+        }
+        .padding()
+        .background(isDarkMode ? Color.black : Color.white)
+        .cornerRadius(8)
+        .frame(maxWidth: .infinity, alignment: .trailing)
+//        .padding(.trailing, 16)
+    }
+
+
+    
+    private var suggestionList: some View {
+        List {
+            ForEach(searchSuggestions, id: \.self) { suggestion in
+                Button(action: {
+                    searchText = suggestion
+                    searchSuggestions.removeAll()
+                    performSearch()
+                    searchText = ""
+                }) {
+                    Text(suggestion)
+                        .foregroundColor(isDarkMode ? .white : .black)
                 }
             }
         }
+        .listStyle(PlainListStyle())
+        .frame(maxWidth: 200)
+        .environment(\.colorScheme, isDarkMode ? .dark : .light)
+        .cornerRadius(8)
+        .padding(.horizontal)
+    }
+    
+    private var resultView: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                ForEach(searchResults, id: \.self) { result in
+                    Text(result)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundColor(isDarkMode ? .white : .black)
+                        .cornerRadius(8)
+                }
+            }
+            .padding(.horizontal)
+            
+        }
+        .onTapGesture {
+            isTextFieldFocused = false
+        }
+    }
+    private func toggleRecording() {
+        if isRecording {
+            stopRecording()
+        } else {
+            searchText = ""
+            startRecording()
+        }
+    }
+    
+    private func setupSpeechRecognizer(for localeIdentifier: String) {
+        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier))
+    }
+    
+    private func requestAudioPermissions() {
+        SFSpeechRecognizer.requestAuthorization { status in
+            switch status {
+            case .authorized:
+                break
+            case .denied, .restricted, .notDetermined:
+                print("Speech recognition authorization denied.")
+            @unknown default:
+                break
+            }
+        }
+        AVAudioApplication.requestRecordPermission { granted in
+            if !granted {
+                print("Microphone permission denied.")
+            }
+        }
+    }
+    
+    private func startRecording() {
+        guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
+            searchResults = ["Speech recognizer is not available for \(selectedLanguage)"]
+            return
+        }
+        
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        let inputNode = audioEngine.inputNode
+        
+        guard let recognitionRequest = recognitionRequest else {
+            fatalError("Unable to create an SFSpeechAudioBufferRecognitionRequest")
+        }
+        
+        recognitionRequest.shouldReportPartialResults = true
+        
+        recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
+            if let result = result {
+                searchText = result.bestTranscription.formattedString
+            }
+            if error != nil || result?.isFinal == true {
+                audioEngine.stop()
+                inputNode.removeTap(onBus: 0)
+                self.recognitionRequest = nil
+                self.recognitionTask = nil
+                isRecording = false
+            }
+        }
+        
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+            recognitionRequest.append(buffer)
+        }
+        
+        audioEngine.prepare()
+        do {
+            try audioEngine.start()
+        } catch {
+            print("Audio Engine couldn't start.")
+        }
+        
+        isRecording = true
+    }
+    
+    private func stopRecording() {
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        isRecording = false
+        performSearch()
     }
 }
 

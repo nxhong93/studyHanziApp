@@ -7,55 +7,43 @@
 
 import SwiftUI
 import Foundation
+import Combine
 
 
-struct HuggingFaceApi{
-    let apiUrl = llmConfig.apiUrl
-    let token: String
-    
-    init(token: String) {
-        self.token = token
-    }
-    
-    func query(payload: [String: Any], completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: apiUrl) else {
-            completion(.failure(NSError(domain: "Invalid url", code: 0, userInfo: nil)))
-            return
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(llmConfig.authorization, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: payload)
-            request.httpBody = jsonData
-        } catch {
-            completion(.failure(error))
-            return
-        }
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            
-            guard let data = data else {
-                completion(.failure(NSError(domain: "No Data", code: 0, userInfo: nil)))
-                return
-            }
-            
-            do {
-                if let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any], let generatedText = jsonResponse["generated_text"] as? String {
-                    completion(.success(generatedText))
-                } else {
-                    completion(.failure(NSError(domain: "Invalid Response", code: 0, userInfo: nil)))
-                }
-            } catch {
-                completion(.failure(error))
-            }
-        }
-        task.resume()
-    }
+struct llmModel {
+    let name: String
 }
+
+struct llmAccount {
+    let accoundId: String
+    let token: String
+}
+
+
+//list_model = [
+//    "@hf/nousresearch/hermes-2-pro-mistral-7b",
+//    "@cf/meta/llama-3.1-70b-instruct",
+//    "@cf/meta/llama-3.1-8b-instruct-fast",
+//    "@hf/thebloke/neural-chat-7b-v3-1-awq",
+//    "@hf/thebloke/openhermes-2.5-mistral-7b-awq",
+//    "@cf/fblgit/una-cybertron-7b-v2-bf16",
+//    "@hf/thebloke/zephyr-7b-beta-awq",
+//]
+
+struct llmConfig {
+    static let model_name: String = "@hf/nousresearch/hermes-2-pro-mistral-7b"
+    static let llm_acc: [llmAccount] = [
+        llmAccount(accoundId: "37ee5390db6343179564a8597dd5f8b8", token: "8j58LQhSA05iLnxj3LOWz1L0D4gWum0tbXa80nzA"),
+        llmAccount(accoundId: "c2aad90a2fc36cc3563418daf24dd2c6", token: "UKV7SeFZWUdz4C2nsjlUPqmJDwAZxXpE_GfKa45Y"),
+        llmAccount(accoundId: "c28b912ed79aef66692a02df93ef140a", token: "P03kbSkgEJhlZAnKQ7OijsK7JlALwwVzwjxjIFyz")
+    ]
+}
+
+enum CustomError: Error {
+    case noAccountsAvailable
+    case invalidURL
+    case noData
+    case invalidResponseFormat
+    case apiError(String)
+}
+
