@@ -13,6 +13,7 @@ import AVFoundation
 import Speech
 
 
+
 struct searchView: View {
     
     @FocusState private var isTextFieldFocused: Bool
@@ -32,6 +33,8 @@ struct searchView: View {
     @State private var recognitionTask: SFSpeechRecognitionTask?
     @State private var speechRecognizer: SFSpeechRecognizer?
     @State private var dragOffset = CGSize.zero
+    
+    @State private var speechSynthesizer = AVSpeechSynthesizer()
     
     
     var dictionary: [WordEntry] = CSVHelper.loadCSV(fileName: csvConfig.csvFileName)
@@ -65,7 +68,7 @@ struct searchView: View {
             Task { @MainActor in
                 do {
                     let response = try await session.translate(searchText)
-                    searchResults = [searchText + "\n" + response.targetText]
+                    searchResults = [searchText, response.targetText]
                     searchText = ""
                 } catch let error as TranslationError {
                     searchResults = ["Translation failed: \(error.localizedDescription)"]
@@ -239,8 +242,8 @@ struct searchView: View {
         .background(isDarkMode ? Color.black : Color.white)
         .cornerRadius(8)
         .frame(maxWidth: .infinity, alignment: .trailing)
-//        .padding(.trailing, 16)
     }
+
 
 
     
@@ -267,22 +270,46 @@ struct searchView: View {
     
     private var resultView: some View {
         ScrollView {
-            VStack(spacing: 8) {
+            VStack(spacing: 2) {
                 ForEach(searchResults, id: \.self) { result in
-                    Text(result)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .foregroundColor(isDarkMode ? .white : .black)
-                        .cornerRadius(8)
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(result.components(separatedBy: "\n"), id: \.self) { line in
+                            HStack {
+                                Text(line)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .foregroundColor(isDarkMode ? .white : .black)
+                                    .padding(.vertical, 2)
+                                    .contextMenu {
+                                        Button(action: {
+                                            UIPasteboard.general.string = line
+                                        }) {
+                                            Label("Copy", systemImage: "doc.on.doc.fill")
+                                        }
+                                    }
+                                
+                                if isChineseOnly(line) {
+                                    Button(action: {
+                                        readText(line, in: "zh-CN")
+                                    }) {
+                                        Image(systemName: "speaker.wave.2.fill")
+                                            .foregroundColor(isDarkMode ? .white : .blue)
+                                    }
+                                    .buttonStyle(BorderlessButtonStyle())
+                                }
+                            }
+                            .cornerRadius(8)
+                        }
+                    }
+                    .padding(.bottom, 2)
                 }
             }
             .padding(.horizontal)
-            
         }
         .onTapGesture {
             isTextFieldFocused = false
         }
     }
+
     private func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -363,6 +390,26 @@ struct searchView: View {
         isRecording = false
         performSearch()
     }
+    
+    private func readText(_ text: String, in language: String) {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: language)
+        utterance.rate = 0.5
+        utterance.volume = 1
+        speechSynthesizer.speak(utterance)
+    }
+
+    
+    private func isChineseOnly(_ text: String) -> Bool {
+        let chineseAndPunctuationPattern = "^[\\p{Han}\\p{Punct}]+$"
+            let regex = try! NSRegularExpression(pattern: chineseAndPunctuationPattern)
+            
+            let range = NSRange(location: 0, length: text.utf16.count)
+            return regex.firstMatch(in: text, options: [], range: range) != nil
+    }
+
+
+
 }
 
 #Preview {
