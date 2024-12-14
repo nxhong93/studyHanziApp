@@ -11,6 +11,7 @@ import NaturalLanguage
 import FirebaseAuth
 import AVFoundation
 import Speech
+import Vision
 
 
 
@@ -36,6 +37,18 @@ struct searchView: View {
     
     @State private var speechSynthesizer = AVSpeechSynthesizer()
     
+    @State private var isDrawingActive = false
+    @State private var isCameraActive = false
+    @State private var drawnText: String = ""
+    @State private var detectedText: String = ""
+    @State private var drawnSuggestions: [String] = []
+    @State private var selectedDrawnText: String = ""
+    @State private var isCanvasVisible = true
+    
+    @State private var imageDetectedText: String = ""
+    @State private var isImagePickerPresented = false
+    @State private var selectedImage: UIImage? = nil
+
     
     var dictionary: [WordEntry] = CSVHelper.loadCSV(fileName: csvConfig.csvFileName)
     let llmApi = llmService()
@@ -43,6 +56,7 @@ struct searchView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             searchBar
+            
             ZStack {
                 
                 VStack {
@@ -85,7 +99,53 @@ struct searchView: View {
         .onChange(of: selectedLanguage) {_, _ in
             setupSpeechRecognizer(for: selectedLanguage.localeIdentifier)
         }
+        .sheet(isPresented: $isDrawingActive, onDismiss: {
+            if !drawnText.isEmpty {
+                searchText = drawnText
+            }
+            isDrawingActive = false
+        }) {
+            NavigationView {
+                CanvasView(
+                    drawnText: $drawnText,
+                    drawnSuggestions: $drawnSuggestions,
+                    selectedDrawnText: $selectedDrawnText
+                )
+            }
+        }
+        .sheet(isPresented: $isCameraActive) {
+            CameraView(isCameraActive: $isCameraActive, searchResults: $searchResults)
+        }
     }
+    
+    private func detectTextFromImage(_ image: UIImage) {
+        let request = VNRecognizeTextRequest { (request, error) in
+            guard error == nil else {
+                print("Error recognizing text: \(String(describing: error))")
+                return
+            }
+
+            if let observations = request.results as? [VNRecognizedTextObservation] {
+                var detectedText = ""
+                for observation in observations {
+                    if let topCandidate = observation.topCandidates(1).first {
+                        detectedText += topCandidate.string
+                    }
+                }
+                self.imageDetectedText = detectedText
+                performSearch()
+            }
+        }
+        
+        guard let ciImage = CIImage(image: image) else {
+            print("Unable to convert UIImage to CIImage")
+            return
+        }
+        
+        let handler = VNImageRequestHandler(ciImage: ciImage, options: [:])
+        try? handler.perform([request])
+    }
+    
     
     private func fetchSearchSuggestions(for query: String) {
         guard !query.isEmpty else {
@@ -106,44 +166,43 @@ struct searchView: View {
         
         isLoading = true
         switch selectedSearchType {
-            case .online:
-                TranslationHelper.onlineTranslate(searchText: trimmedText) { newConfig, _ in
-                    if let newConfig = newConfig {
-                        if configuration == nil || configuration != newConfig {
-                            configuration = newConfig
-                        } else {
-                            configuration?.invalidate()
-                        }
+        case .online:
+            TranslationHelper.onlineTranslate(searchText: trimmedText) { newConfig, _ in
+                if let newConfig = newConfig {
+                    if configuration == nil || configuration != newConfig {
+                        configuration = newConfig
                     } else {
-                        searchResults = ["Translation configuration failed."]
-                        isLoading = false
+                        configuration?.invalidate()
                     }
+                } else {
+                    searchResults = ["Translation configuration failed."]
+                    isLoading = false
                 }
-
-
-            case .offline:
-                searchResults = CSVHelper.searchWord(in: dictionary, for: trimmedText)
-                isLoading = false
-                searchSuggestions.removeAll()
-                searchText = ""
-            case .llm:
-                llmApi.runLlmQuery(inputText: trimmedText) { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                            case .success(let response):
-                                searchResults = [response]
-                            case .failure(let error):
-                                searchResults = ["LLm error: \(error.localizedDescription)"]
-                            
-                        }
-                        isLoading = false
+            }
+            
+            
+        case .offline:
+            searchResults = CSVHelper.searchWord(in: dictionary, for: trimmedText)
+            isLoading = false
+            searchSuggestions.removeAll()
+            searchText = ""
+        case .llm:
+            llmApi.runLlmQuery(inputText: trimmedText) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let response):
+                        searchResults = [response]
+                    case .failure(let error):
+                        searchResults = ["LLm error: \(error.localizedDescription)"]
+                        
                     }
+                    isLoading = false
                 }
-                searchResults = [""]
-                searchText = ""
-            case .image:
-                searchResults = [""]
-                isLoading = false
+            }
+            searchResults = [""]
+            searchText = ""
+        case .camera:
+            clearSearch()
         }
     }
     
@@ -154,20 +213,36 @@ struct searchView: View {
     }
     
     private var searchBar: some View {
-        HStack() {
+        HStack {
             Menu {
                 ForEach(SearchType.allCases, id: \.self) { type in
-                    Button(action: {
-                        selectedSearchType = type
-                        clearSearch()
-                    }) {
-                        HStack {
-                            Image(systemName: type.icon)
-                                .font(.body)
-                                .foregroundColor(isDarkMode ? .white : .blue)
-                            Text(type.rawValue.capitalized)
-                                .font(.body)
-                                .foregroundColor(isDarkMode ? .white : .primary)
+                    if type != .camera {
+                        Button(action: {
+                            selectedSearchType = type
+                            clearSearch()
+                        }) {
+                            HStack {
+                                Image(systemName: type.icon)
+                                    .font(.body)
+                                    .foregroundColor(isDarkMode ? .white : .blue)
+                                Text(type.rawValue.capitalized)
+                                    .font(.body)
+                                    .foregroundColor(isDarkMode ? .white : .primary)
+                            }
+                        }
+                    } else {
+                        Button(action: {
+                            isCameraActive.toggle()
+                            
+                        }) {
+                            HStack {
+                                Image(systemName: type.icon)
+                                    .font(.title2)
+                                    .foregroundColor(isDarkMode ? .white : .blue)
+                                Text(type.rawValue.capitalized)
+                                    .font(.body)
+                                    .foregroundColor(isDarkMode ? .white : .primary)
+                            }
                         }
                     }
                 }
@@ -209,19 +284,30 @@ struct searchView: View {
                         .padding(.horizontal, 8)
                     
                     Button(action: toggleRecording) {
-                       Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle")
-                           .font(.title2)
-                           .foregroundColor(isDarkMode ? .white : .blue)
-                           .accessibilityLabel(isRecording ? "Stop Recording" : "Start Recording")
-                   }
-                   .padding(.leading, 4)
+                        Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle")
+                            .font(.title2)
+                            .foregroundColor(isDarkMode ? .white : .blue)
+                            .accessibilityLabel(isRecording ? "Stop Recording" : "Start Recording")
+                    }
+                    .padding(.leading, 4)
+                    
+                    Button(action: {
+                        isDrawingActive = true
+                    }) {
+                        Image(systemName: "pencil.circle")
+                            .font(.title2)
+                            .foregroundColor(isDarkMode ? .white : .blue)
+                    }
+                    .padding(.leading, 4)
                 }
             }
             .padding(.trailing, 16)
         }
         .padding(.leading)
-        
     }
+
+
+    
     
     private var languageMenu: some View {
         Menu {
@@ -285,9 +371,23 @@ struct searchView: View {
                                         }) {
                                             Label("Copy", systemImage: "doc.on.doc.fill")
                                         }
+                                        ForEach(SearchType.allCases.filter { $0 != .camera }, id: \.self) { type in
+                                            Button(action: {
+                                                selectedSearchType = type
+                                                searchText = line
+                                                performSearch()
+                                            }) {
+                                                HStack {
+                                                    Image(systemName: type.icon)
+                                                        .font(.body)
+                                                    Text(type.rawValue.capitalized)
+                                                        .font(.body)
+                                                }
+                                            }
+                                        }
                                     }
                                 
-                                if isChineseOnly(line) {
+                                if isChinese(line) {
                                     Button(action: {
                                         readText(line, in: "zh-CN")
                                     }) {
@@ -398,18 +498,6 @@ struct searchView: View {
         utterance.volume = 1
         speechSynthesizer.speak(utterance)
     }
-
-    
-    private func isChineseOnly(_ text: String) -> Bool {
-        let chineseAndPunctuationPattern = "^[\\p{Han}\\p{Punct}]+$"
-            let regex = try! NSRegularExpression(pattern: chineseAndPunctuationPattern)
-            
-            let range = NSRange(location: 0, length: text.utf16.count)
-            return regex.firstMatch(in: text, options: [], range: range) != nil
-    }
-
-
-
 }
 
 #Preview {

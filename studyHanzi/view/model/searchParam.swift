@@ -12,14 +12,14 @@ enum SearchType: String, CaseIterable {
     case online = "Online"
     case offline = "Offline"
     case llm = "LLM"
-    case image = "Image"
+    case camera = "Camera"
     
     var icon: String {
         switch self {
         case .online: return "globe"
         case .offline: return "tray.fill"
         case .llm: return "brain.head.profile"
-        case .image: return "photo"
+        case .camera: return "camera.circle"
         }
     }
 }

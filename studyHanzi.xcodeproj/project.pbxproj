@@ -440,7 +440,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = studyHanzi/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\nThis app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\nThis app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\nThis app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\n\nThis app requires access to the camera.\n\nThis app requires access to the camera.\n\nThis app requires access to the camera.\n\n";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Audio is recorded to transcribe the meeting. Audio recordings are discarded after transcription.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "This app requires access to the photo library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app requires access to the photo library.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "You can view a text transcription of your meeting in the app.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -472,7 +475,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = studyHanzi/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\nThis app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\nThis app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\nThis app requires access to the camera to take a picture for the profile or scan a QR code when you need it.\n\n\nThis app requires access to the camera.\n\nThis app requires access to the camera.\n\nThis app requires access to the camera.\n\n";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Audio is recorded to transcribe the meeting. Audio recordings are discarded after transcription.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "This app requires access to the photo library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app requires access to the photo library.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "You can view a text transcription of your meeting in the app.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

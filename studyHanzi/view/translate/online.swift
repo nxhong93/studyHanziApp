@@ -28,25 +28,31 @@ struct TranslationHelper {
         if let detectedLanguage = languageRecognizer.dominantLanguage {
             var configuration: TranslationSession.Configuration?
             switch detectedLanguage {
-            case .vietnamese:
-                configuration = TranslationSession.Configuration(
-                    source: .init(identifier: "vi"),
-                    target: .init(identifier: "zh-Hans")
-                )
-            case .simplifiedChinese:
-                configuration = .init(
-                    source: .init(identifier: "zh-Hans"),
-                    target: .init(identifier: "vi")
-                )
-            default:
-                configuration = .init(
-                    target: .init(identifier: "vi")
-                )
+                case .vietnamese:
+                    configuration = TranslationSession.Configuration(
+                        source: .init(identifier: "vi"),
+                        target: .init(identifier: "zh-Hans")
+                    )
+                case .simplifiedChinese:
+                    configuration = .init(
+                        source: .init(identifier: "zh-Hans"),
+                        target: .init(identifier: "vi")
+                    )
+                default:
+                    configuration = .init(
+                        target: .init(identifier: "vi")
+                    )
             }
             completion(configuration, [])
         } else {
             completion(nil, ["Unable to detect language."])
         }
+    }
+    static func cameraTranslate() {
+        var _: TranslationSession.Configuration = .init(
+                    source: .init(identifier: "zh-Hans"),
+                    target: .init(identifier: "vi")
+        )
     }
 }
 
