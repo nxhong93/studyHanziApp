@@ -87,7 +87,6 @@ struct CameraView: View {
         
         TextRecognizer.recognizeTextWithRects(in: image) { textRects in
             for textRect in textRects {
-                print(textRect)
                 recognizedTexts.append(textRect.text)
             }
             let newConfig = TranslationSession.Configuration(

@@ -17,15 +17,12 @@ import Vision
 
 struct searchView: View {
     
+    @ObservedObject private var viewModel = SearchViewModel()
     @FocusState private var isTextFieldFocused: Bool
     @Binding var isDarkMode: Bool
-    @State private var searchText: String = ""
     @State private var selectedSearchType: SearchType = .online
-    @State private var searchResults: [String] = []
     @State private var showingSearchMenu: Bool = false
-    @State private var configuration: TranslationSession.Configuration?
-    @State private var searchSuggestions: [String] = []
-    @State private var isLoading: Bool = false
+
     
     @State private var isRecording = false
     @State private var selectedLanguage: Language = .vietnamese
@@ -33,7 +30,6 @@ struct searchView: View {
     @State private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     @State private var recognitionTask: SFSpeechRecognitionTask?
     @State private var speechRecognizer: SFSpeechRecognizer?
-    @State private var dragOffset = CGSize.zero
     
     @State private var speechSynthesizer = AVSpeechSynthesizer()
     
@@ -41,18 +37,13 @@ struct searchView: View {
     @State private var isCameraActive = false
     @State private var drawnText: String = ""
     @State private var detectedText: String = ""
-    @State private var drawnSuggestions: [String] = []
-    @State private var selectedDrawnText: String = ""
     @State private var isCanvasVisible = true
     
     @State private var imageDetectedText: String = ""
     @State private var isImagePickerPresented = false
     @State private var selectedImage: UIImage? = nil
 
-    
-    var dictionary: [WordEntry] = CSVHelper.loadCSV(fileName: csvConfig.csvFileName)
-    let llmApi = llmService()
-    
+        
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             searchBar
@@ -60,10 +51,10 @@ struct searchView: View {
             ZStack {
                 
                 VStack {
-                    if !searchSuggestions.isEmpty && selectedSearchType == .offline {
+                    if !viewModel.searchSuggestions.isEmpty && selectedSearchType == .offline {
                         suggestionList
                     }
-                    if isLoading && selectedSearchType == .llm {
+                    if viewModel.isLoading && selectedSearchType == .llm {
                         ProgressView("...")
                             .padding()
                     } else {
@@ -77,19 +68,19 @@ struct searchView: View {
             }
         }
         .background(isDarkMode ? .black : .white)
-        .translationTask(configuration) { session in
+        .translationTask(viewModel.configuration) { session in
             guard selectedSearchType == .online else { return }
             Task { @MainActor in
                 do {
-                    let response = try await session.translate(searchText)
-                    searchResults = [searchText, response.targetText]
-                    searchText = ""
+                    let response = try await session.translate(viewModel.searchText)
+                    viewModel.searchResults = [viewModel.searchText, response.targetText]
+                    viewModel.searchText = ""
                 } catch let error as TranslationError {
-                    searchResults = ["Translation failed: \(error.localizedDescription)"]
+                    viewModel.searchResults = ["Translation failed: \(error.localizedDescription)"]
                 } catch {
-                    searchResults = ["An unknown error occurred."]
+                    viewModel.searchResults = ["An unknown error occurred."]
                 }
-                isLoading = false
+                viewModel.isLoading = false
             }
         }
         .onAppear {
@@ -101,115 +92,31 @@ struct searchView: View {
         }
         .sheet(isPresented: $isDrawingActive, onDismiss: {
             if !drawnText.isEmpty {
-                searchText = drawnText
+                viewModel.searchText += drawnText
             }
             isDrawingActive = false
         }) {
             NavigationView {
-                CanvasView(
-                    drawnText: $drawnText,
-                    drawnSuggestions: $drawnSuggestions,
-                    selectedDrawnText: $selectedDrawnText
+                DrawingView(
+                    selectedCharacter: $drawnText
                 )
             }
         }
         .sheet(isPresented: $isCameraActive) {
-            CameraView(isCameraActive: $isCameraActive, searchResults: $searchResults)
+            CameraView(isCameraActive: $isCameraActive, searchResults: $viewModel.searchResults)
         }
     }
     
-    private func detectTextFromImage(_ image: UIImage) {
-        let request = VNRecognizeTextRequest { (request, error) in
-            guard error == nil else {
-                print("Error recognizing text: \(String(describing: error))")
-                return
-            }
-
-            if let observations = request.results as? [VNRecognizedTextObservation] {
-                var detectedText = ""
-                for observation in observations {
-                    if let topCandidate = observation.topCandidates(1).first {
-                        detectedText += topCandidate.string
-                    }
-                }
-                self.imageDetectedText = detectedText
-                performSearch()
-            }
-        }
-        
-        guard let ciImage = CIImage(image: image) else {
-            print("Unable to convert UIImage to CIImage")
-            return
-        }
-        
-        let handler = VNImageRequestHandler(ciImage: ciImage, options: [:])
-        try? handler.perform([request])
-    }
     
     
     private func fetchSearchSuggestions(for query: String) {
         guard !query.isEmpty else {
-            searchSuggestions.removeAll()
+            viewModel.searchSuggestions.removeAll()
             return
         }
 
-        let allSuggestions = CSVHelper.suggesWord(in: dictionary, for: query)
-        searchSuggestions = allSuggestions.filter { $0 != query }
-    }
-    
-    private func performSearch() {
-        let trimmedText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty else {
-            searchResults = ["Please enter text to translate."]
-            return
-        }
-        
-        isLoading = true
-        switch selectedSearchType {
-        case .online:
-            TranslationHelper.onlineTranslate(searchText: trimmedText) { newConfig, _ in
-                if let newConfig = newConfig {
-                    if configuration == nil || configuration != newConfig {
-                        configuration = newConfig
-                    } else {
-                        configuration?.invalidate()
-                    }
-                } else {
-                    searchResults = ["Translation configuration failed."]
-                    isLoading = false
-                }
-            }
-            
-            
-        case .offline:
-            searchResults = CSVHelper.searchWord(in: dictionary, for: trimmedText)
-            isLoading = false
-            searchSuggestions.removeAll()
-            searchText = ""
-        case .llm:
-            llmApi.runLlmQuery(inputText: trimmedText) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let response):
-                        searchResults = [response]
-                    case .failure(let error):
-                        searchResults = ["LLm error: \(error.localizedDescription)"]
-                        
-                    }
-                    isLoading = false
-                }
-            }
-            searchResults = [""]
-            searchText = ""
-        case .camera:
-            clearSearch()
-        }
-    }
-    
-    private func clearSearch() {
-        searchText = ""
-        searchResults = []
-        searchSuggestions = []
+        let allSuggestions = CSVHelper.suggesWord(in: viewModel.dictionary, for: query)
+        viewModel.searchSuggestions = allSuggestions.filter { $0 != query }
     }
     
     private var searchBar: some View {
@@ -219,7 +126,7 @@ struct searchView: View {
                     if type != .camera {
                         Button(action: {
                             selectedSearchType = type
-                            clearSearch()
+                            viewModel.clearSearch()
                         }) {
                             HStack {
                                 Image(systemName: type.icon)
@@ -260,25 +167,25 @@ struct searchView: View {
                     .frame(height: 40)
                 HStack {
                     Button(action: {
-                        performSearch()
+                        viewModel.performSearch(searchText: viewModel.searchText, selectedSearchType: selectedSearchType)
                     }) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(isDarkMode ? .white : .gray)
                             .padding(.leading, 16)
                     }
-                    TextField("Search", text: $searchText)
+                    TextField("Search", text: $viewModel.searchText)
                         .foregroundColor(isDarkMode ? .white : .black)
                         .focused($isTextFieldFocused)
-                        .onChange(of: searchText) { oldText, newText in
+                        .onChange(of: viewModel.searchText) { oldText, newText in
                             if selectedSearchType == .offline {
                                 fetchSearchSuggestions(for: newText)
                             } else {
-                                searchSuggestions.removeAll()
+                                viewModel.searchSuggestions.removeAll()
                             }
                         }
                         .onSubmit {
-                            performSearch()
-                            searchSuggestions.removeAll()
+                            viewModel.performSearch(searchText: viewModel.searchText, selectedSearchType: selectedSearchType)
+                            viewModel.searchSuggestions.removeAll()
                             isTextFieldFocused = false
                         }
                         .padding(.horizontal, 8)
@@ -335,12 +242,12 @@ struct searchView: View {
     
     private var suggestionList: some View {
         List {
-            ForEach(searchSuggestions, id: \.self) { suggestion in
+            ForEach(viewModel.searchSuggestions, id: \.self) { suggestion in
                 Button(action: {
-                    searchText = suggestion
-                    searchSuggestions.removeAll()
-                    performSearch()
-                    searchText = ""
+                    viewModel.searchText = suggestion
+                    viewModel.searchSuggestions.removeAll()
+                    viewModel.performSearch(searchText: suggestion, selectedSearchType: selectedSearchType)
+                    viewModel.searchText = ""
                 }) {
                     Text(suggestion)
                         .foregroundColor(isDarkMode ? .white : .black)
@@ -357,64 +264,93 @@ struct searchView: View {
     private var resultView: some View {
         ScrollView {
             VStack(spacing: 2) {
-                ForEach(searchResults, id: \.self) { result in
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(result.components(separatedBy: "\n"), id: \.self) { line in
-                            HStack {
-                                Text(line)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .foregroundColor(isDarkMode ? .white : .black)
-                                    .padding(.vertical, 2)
-                                    .contextMenu {
-                                        Button(action: {
-                                            UIPasteboard.general.string = line
-                                        }) {
-                                            Label("Copy", systemImage: "doc.on.doc.fill")
-                                        }
-                                        ForEach(SearchType.allCases.filter { $0 != .camera }, id: \.self) { type in
+                HStack {
+                    Button(action: {
+                        viewModel.backStroke()
+                    }) {
+                        Image(systemName: "arrow.uturn.backward.circle.fill")
+                            .font(.title)
+                            .foregroundColor(isDarkMode ? .white : .blue)
+                            .padding()
+                    }
+                    .disabled(viewModel.resultManager?.canUndo == false)
+                    
+                    Spacer()
+                    Button(action: {
+                        print("Redo button pressed")
+                        viewModel.redoStroke()
+                    }) {
+                        Image(systemName: "arrow.uturn.forward.circle.fill")
+                            .font(.title)
+                            .foregroundColor(isDarkMode ? .white : .blue)
+                            .padding()
+                    }
+                    .disabled(viewModel.resultManager?.canRedo == false)
+                }
+                .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.horizontal)
+                
+                VStack(spacing: 2) {
+                    ForEach(viewModel.searchResults, id: \.self) { result in
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(result.components(separatedBy: "\n"), id: \.self) { line in
+                                HStack {
+                                    Text(line)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .foregroundColor(isDarkMode ? .white : .black)
+                                        .padding(.vertical, 2)
+                                        .contextMenu {
                                             Button(action: {
-                                                selectedSearchType = type
-                                                searchText = line
-                                                performSearch()
+                                                UIPasteboard.general.string = line
                                             }) {
-                                                HStack {
-                                                    Image(systemName: type.icon)
-                                                        .font(.body)
-                                                    Text(type.rawValue.capitalized)
-                                                        .font(.body)
+                                                Label("Copy", systemImage: "doc.on.doc.fill")
+                                            }
+                                            ForEach(SearchType.allCases.filter { $0 != .camera }, id: \.self) { type in
+                                                Button(action: {
+                                                    selectedSearchType = type
+                                                    viewModel.searchText = line
+                                                    viewModel.performSearch(searchText: viewModel.searchText, selectedSearchType: selectedSearchType)
+                                                }) {
+                                                    HStack {
+                                                        Image(systemName: type.icon)
+                                                            .font(.body)
+                                                        Text(type.rawValue.capitalized)
+                                                            .font(.body)
+                                                    }
                                                 }
                                             }
                                         }
+                                    
+                                    if isChinese(line) {
+                                        Button(action: {
+                                            readText(line, in: "zh-CN")
+                                        }) {
+                                            Image(systemName: "speaker.wave.2.fill")
+                                                .foregroundColor(isDarkMode ? .white : .blue)
+                                        }
+                                        .buttonStyle(BorderlessButtonStyle())
                                     }
-                                
-                                if isChinese(line) {
-                                    Button(action: {
-                                        readText(line, in: "zh-CN")
-                                    }) {
-                                        Image(systemName: "speaker.wave.2.fill")
-                                            .foregroundColor(isDarkMode ? .white : .blue)
-                                    }
-                                    .buttonStyle(BorderlessButtonStyle())
                                 }
+                                .cornerRadius(8)
                             }
-                            .cornerRadius(8)
                         }
+                        .padding(.bottom, 2)
                     }
-                    .padding(.bottom, 2)
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
-        }
-        .onTapGesture {
-            isTextFieldFocused = false
+            .onTapGesture {
+                isTextFieldFocused = false
+            }
         }
     }
+
 
     private func toggleRecording() {
         if isRecording {
             stopRecording()
         } else {
-            searchText = ""
+            viewModel.searchText = ""
             startRecording()
         }
     }
@@ -443,7 +379,7 @@ struct searchView: View {
     
     private func startRecording() {
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            searchResults = ["Speech recognizer is not available for \(selectedLanguage)"]
+            viewModel.searchResults = ["Speech recognizer is not available for \(selectedLanguage)"]
             return
         }
         
@@ -458,7 +394,7 @@ struct searchView: View {
         
         recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
             if let result = result {
-                searchText = result.bestTranscription.formattedString
+                viewModel.searchText = result.bestTranscription.formattedString
             }
             if error != nil || result?.isFinal == true {
                 audioEngine.stop()
@@ -488,7 +424,7 @@ struct searchView: View {
         audioEngine.stop()
         recognitionRequest?.endAudio()
         isRecording = false
-        performSearch()
+        viewModel.performSearch(searchText: viewModel.searchText, selectedSearchType: selectedSearchType)
     }
     
     private func readText(_ text: String, in language: String) {

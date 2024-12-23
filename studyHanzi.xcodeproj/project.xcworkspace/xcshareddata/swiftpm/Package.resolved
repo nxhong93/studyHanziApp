@@ -1,5 +1,5 @@
 {
-  "originHash" : "809767c578f1058ab5fea90c3e19b6cd2d1f9dd10190023753094a356e675446",
+  "originHash" : "a10075e209bb4c816654b59592036d28ba492fdc2ef7801595b8ad9e317a7f8c",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -143,6 +143,15 @@
       "state" : {
         "revision" : "ebc7251dd5b37f627c93698e4374084d98409633",
         "version" : "1.28.2"
+      }
+    },
+    {
+      "identity" : "zinnia-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/shinjukunian/zinnia-swift.git",
+      "state" : {
+        "revision" : "987355dbae914ee4e613ee3b987fe54c1f91d5f4",
+        "version" : "0.1.0"
       }
     }
   ],
