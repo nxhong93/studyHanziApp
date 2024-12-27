@@ -17,12 +17,13 @@ internal extension Color{
 
 
 public class CanvasConfiguration:ObservableObject{
-    @Published public var backgroundColor = Color.quaternaryLabel
-    @Published public var foregroundColor = Color.red
-    @Published public var strokeColor = UIColor.label
-    @Published public var strokeWidth : CGFloat = 5
-    @Published public var toolType:PKInkingTool.InkType = .pen
-    @Published public var showStandardButtons = true
+    @Published var backgroundColor = Color.black
+    @Published var foregroundColor = Color.red
+    @Published var strokeColor = UIColor.green
+    @Published var strokeWidth : CGFloat = 5
+    @Published var toolType:PKInkingTool.InkType = .pen
+    @Published var showStandardButtons = true
+    @Published var isDarkMode: Bool = true
     
     public init(){}
 }

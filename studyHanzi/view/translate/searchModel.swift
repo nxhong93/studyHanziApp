@@ -65,23 +65,23 @@ class SearchViewModel: ObservableObject {
             searchSuggestions.removeAll()
             self.searchText = ""
         case .llm:
+            isLoading = true
             llmApi.runLlmQuery(inputText: trimmedText) { [weak self] result in
                 DispatchQueue.main.async {
                     guard let self = self else { return }
                     let newSearchResults: [String]
                     switch result {
                     case .success(let response):
-                        newSearchResults = [response]
+                        newSearchResults = [trimmedText, response]
                     case .failure(let error):
                         newSearchResults = ["LLM error: \(error.localizedDescription)"]
                     }
                     self.registerUndo(newSearchResults)
                     self.searchResults = newSearchResults
                     self.isLoading = false
+                    self.searchText = ""
                 }
             }
-            searchResults = [""]
-            self.searchText = ""
         case .camera:
             clearSearch()
         }
@@ -91,7 +91,7 @@ class SearchViewModel: ObservableObject {
         let oldValue = searchResults
         resultManager?.registerUndo(withTarget: self) { target in
             target.searchResults = oldValue
-            target.registerUndo(oldValue) // Register redo
+            target.registerUndo(oldValue)
         }
         searchResults = newValue
     }

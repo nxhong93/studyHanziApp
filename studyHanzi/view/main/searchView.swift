@@ -54,7 +54,7 @@ struct searchView: View {
                     if !viewModel.searchSuggestions.isEmpty && selectedSearchType == .offline {
                         suggestionList
                     }
-                    if viewModel.isLoading && selectedSearchType == .llm {
+                    if viewModel.isLoading {
                         ProgressView("...")
                             .padding()
                     } else {
@@ -94,13 +94,16 @@ struct searchView: View {
             if !drawnText.isEmpty {
                 viewModel.searchText += drawnText
             }
+            drawnText = ""
             isDrawingActive = false
         }) {
             NavigationView {
                 DrawingView(
                     selectedCharacter: $drawnText
                 )
+                
             }
+            .background(isDarkMode ? .black : .white)
         }
         .sheet(isPresented: $isCameraActive) {
             CameraView(isCameraActive: $isCameraActive, searchResults: $viewModel.searchResults)

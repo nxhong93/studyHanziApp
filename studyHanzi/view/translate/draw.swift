@@ -12,7 +12,7 @@ import Foundation
 
 struct HanziInfoView: View {
     var character: HanziDictionary.HanziCharacter
-
+    
     var body: some View {
         HStack {
             Text(character.character)
@@ -63,6 +63,9 @@ struct DrawingView: View {
         }
         .onReceive(recognize.$characters) { newCharacter in
             self.characters = newCharacter.compactMap { dictionary.hanziCharacter(for: $0)}
+        }
+        .onDisappear {
+            selectedCharacter = ""
         }
     }
 }

@@ -50,7 +50,6 @@ struct FancyCanvasWrapper: UIViewRepresentable {
 
     func makeUIView(context: Context) -> PKCanvasView {
         
-        canvas.tool = PKInkingTool(.pen, color: strokeColor, width: strokeWidth)
         canvas.drawingPolicy = .anyInput
         canvas.delegate = context.coordinator
         canvas.isScrollEnabled=false
@@ -125,14 +124,6 @@ public struct FancyCanvas:View, CanvasView{
     }
 }
 
-struct FancyCanvasView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            FancyCanvas().environmentObject(Recognizer()).environmentObject(CanvasConfiguration())
-            
-        }
-    }
-}
 
 extension PKCanvasView{
     func removeLastStroke(){

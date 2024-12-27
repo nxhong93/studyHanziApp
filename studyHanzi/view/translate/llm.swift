@@ -1,13 +1,35 @@
 import Foundation
+import NaturalLanguage
+
 
 
 
 class llmService {
-    
     func runLlmQuery(
         inputText: String,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
+        detectLanguage(for: inputText) { [weak self] detectedLanguage in
+            guard let self = self else { return }
+            
+            let param = llmLanguageConfig(inputText: inputText, detectdLanguage: detectedLanguage)
+            self.sendLlmRequest(with: param, completion: completion)
+        }
+    }
+    
+    public func detectLanguage(for text: String, completion: @escaping (String) -> Void) {
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(text)
+        
+        guard let detectedLanguage = recognizer.dominantLanguage?.rawValue else {
+            completion("unknown")
+            return
+        }
+        
+        completion(detectedLanguage)
+    }
+    
+    public func sendLlmRequest(with param: llmLanguageConfig, completion: @escaping (Result<String, Error>) -> Void) {
         guard let randomAccount = llmConfig.llm_acc.randomElement() else {
             completion(.failure(CustomError.noAccountsAvailable))
             return
@@ -25,18 +47,8 @@ class llmService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let messages: [[String: String]] = [
-            [
-                "role": "system",
-                "content": "You are a language expert. Translate the user's sentence as instructed."
-            ],
-            [
-                "role": "user",
-                "content": """
-                Translate the following sentence into Chinese if it is in Vietnamese. \
-                If the sentence is not in Vietnamese, translate it into Vietnamese. \
-                No further words or explanations needed: \(inputText)
-                """
-            ]
+            ["role": "system", "content": param.systemPrompt],
+            ["role": "user", "content": param.userPrompt]
         ]
         
         let body: [String: Any] = ["messages": messages]
@@ -67,3 +79,4 @@ class llmService {
         }.resume()
     }
 }
+

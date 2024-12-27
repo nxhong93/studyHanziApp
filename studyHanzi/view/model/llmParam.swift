@@ -39,6 +39,21 @@ struct llmConfig {
     ]
 }
 
+struct llmLanguageConfig {
+    let systemPrompt: String
+    let userPrompt: String
+    
+    init(inputText: String, detectdLanguage: String) {
+        if detectdLanguage == "vi" {
+            self.systemPrompt = "You are a language expert. Translate the user's sentence into Chinese."
+            self.userPrompt = "Translate the following Vietnamese sentence into Chinese: \(inputText)"
+        } else {
+            self.systemPrompt = "You are a language expert. Translate the user's sentence into Vietnamese."
+            self.userPrompt = "Translate the following sentence into Vietnamese: \(inputText)"
+        }
+    }
+}
+
 enum CustomError: Error {
     case noAccountsAvailable
     case invalidURL
