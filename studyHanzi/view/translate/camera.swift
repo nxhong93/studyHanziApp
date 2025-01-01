@@ -26,7 +26,6 @@ struct CameraView: View {
             }
             .edgesIgnoringSafeArea(.all)
             
-            
             if isLoading {
                 ProgressView("Đang xử lý...")
                     .progressViewStyle(CircularProgressViewStyle())
@@ -38,9 +37,18 @@ struct CameraView: View {
         }
         .onAppear {
             cameraModel.startSession()
+            AppDelegate.shouldLockOrientation = true
+            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                scene.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+            }
         }
         .onDisappear {
             cameraModel.stopSession()
+            AppDelegate.shouldLockOrientation = false
+            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                scene.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+            }
         }
         .translationTask(cameraConfiguration) { session in
             searchResults.removeAll()
