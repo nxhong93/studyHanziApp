@@ -76,12 +76,14 @@ class PhotoCaptureHandler: NSObject, AVCapturePhotoCaptureDelegate {
 
 struct CameraPreview: UIViewControllerRepresentable {
     let session: AVCaptureSession
+    let isDarkMode: Bool
     var onRecognizeText: ([String]) -> Void
 
     func makeUIViewController(context: Context) -> CameraViewController {
         let cameraViewController = CameraViewController()
         cameraViewController.session = session
         cameraViewController.onRecognizeText = onRecognizeText
+        cameraViewController.isDarkMode = isDarkMode
         return cameraViewController
     }
 
@@ -92,6 +94,7 @@ struct CameraPreview: UIViewControllerRepresentable {
         var onRecognizeText: (([String]) -> Void)?
         private var previewLayer: AVCaptureVideoPreviewLayer?
         private var currentZoomFactor: CGFloat = 1.0
+        var isDarkMode: Bool = false
 
         override func viewDidLoad() {
             super.viewDidLoad()
@@ -99,6 +102,8 @@ struct CameraPreview: UIViewControllerRepresentable {
             setupCameraPreview()
             setupControls()
             addPinchToZoomGesture()
+            
+            view.backgroundColor = isDarkMode ? .black : .white
         }
 
         private func setupCameraPreview() {
@@ -115,7 +120,7 @@ struct CameraPreview: UIViewControllerRepresentable {
             let choosePhotoButton = UIButton(type: .custom)
             choosePhotoButton.setImage(UIImage(systemName: "photo"), for: .normal)
             choosePhotoButton.tintColor = .white
-            choosePhotoButton.backgroundColor = UIColor(white: 0.0, alpha: 0.6)
+            choosePhotoButton.backgroundColor = isDarkMode ? UIColor(white: 0.0, alpha: 0.6) : UIColor(white: 1.0, alpha: 0.6)
             choosePhotoButton.layer.cornerRadius = 25
             choosePhotoButton.addTarget(self, action: #selector(choosePhotoTapped), for: .touchUpInside)
             choosePhotoButton.frame = CGRect(x: 20, y: view.bounds.height - 160, width: 50, height: 50)
@@ -124,7 +129,7 @@ struct CameraPreview: UIViewControllerRepresentable {
             let captureButton = UIButton(type: .custom)
             captureButton.setImage(UIImage(systemName: "camera"), for: .normal)
             captureButton.tintColor = .white
-            captureButton.backgroundColor = UIColor(white: 0.0, alpha: 0.6)
+            captureButton.backgroundColor = isDarkMode ? UIColor(white: 0.0, alpha: 0.6) : UIColor(white: 1.0, alpha: 0.6)
             captureButton.frame = CGRect(x: view.bounds.midX - 27, y: view.bounds.height - 163, width: 50, height: 50)
             captureButton.layer.cornerRadius = 25
             captureButton.addTarget(self, action: #selector(capturePhoto), for: .touchUpInside)

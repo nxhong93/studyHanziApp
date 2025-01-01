@@ -18,10 +18,11 @@ struct CameraView: View {
     
     @Binding var isCameraActive: Bool
     @Binding var searchResults: [String]
+    @Binding var isDarkMode: Bool
     
     var body: some View {
         ZStack {
-            CameraPreview(session: cameraModel.session) { texts in
+            CameraPreview(session: cameraModel.session, isDarkMode: isDarkMode) { texts in
                 handleRecognizedTexts(texts)
             }
             .edgesIgnoringSafeArea(.all)

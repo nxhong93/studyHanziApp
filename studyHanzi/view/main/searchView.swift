@@ -106,7 +106,11 @@ struct searchView: View {
             .background(isDarkMode ? .black : .white)
         }
         .sheet(isPresented: $isCameraActive) {
-            CameraView(isCameraActive: $isCameraActive, searchResults: $viewModel.searchResults)
+            CameraView(
+                isCameraActive: $isCameraActive,
+                searchResults: $viewModel.searchResults,
+                isDarkMode: $isDarkMode
+            )
         }
     }
     
