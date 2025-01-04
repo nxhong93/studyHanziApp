@@ -97,14 +97,14 @@ struct CameraPreview: UIViewControllerRepresentable {
 
 class CameraViewController: UIViewController {
     var session: AVCaptureSession?
-    var onRecognizeText: ((CameraPreviewResult) -> Void)? // Nhận CameraPreviewResult
+    var onRecognizeText: ((CameraPreviewResult) -> Void)?
     private var previewLayer: AVCaptureVideoPreviewLayer?
     private var currentZoomFactor: CGFloat = 1.0
     var isDarkMode: Bool = false
     var cameraModel: CameraModel?
     var isLoading: (Bool) -> Void
     
-    private var cloudgroqService: CloudgroqService?
+    private var cloudService: openRouterService?
 
     init(session: AVCaptureSession?, onRecognizeText: @escaping (CameraPreviewResult) -> Void, isDarkMode: Bool, cameraModel: CameraModel?, isLoading: @escaping (Bool) -> Void) {
         self.session = session
@@ -122,7 +122,7 @@ class CameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        cloudgroqService = CloudgroqService()
+        cloudService = openRouterService()
         setupCameraPreview()
         setupControls()
         addPinchToZoomGesture()
@@ -207,7 +207,7 @@ class CameraViewController: UIViewController {
             guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
             let base64String = imageData.base64EncodedString()
             
-            cloudgroqService?.translateImageWithLLMVision(imageBase: base64String) { result in
+            cloudService?.translateImageWithLLMVision(imageBase: base64String) { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let translatedText):

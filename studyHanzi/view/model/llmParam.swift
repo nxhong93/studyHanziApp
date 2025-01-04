@@ -62,26 +62,35 @@ enum CustomError: Error {
     case apiError(String)
 }
 
-struct groqAccount {
+struct apiAccount {
     let api: String
 }
 
-struct cloudgroqConfig {
+struct llmConfig {
     let modelName: String
-    let llmAccounts: groqAccount?
+    let llmAccounts: apiAccount?
+    let modelUrl: String
     let systemPrompt: String
     let userPrompt: String
     let inputImage: String
 }
 
-
-
 struct cloudgroqSettings {
     static let modelName: String = "llama-3.2-90b-vision-preview"
-    static let llmAccounts: [groqAccount] = [
-        groqAccount(api: "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"),
-        groqAccount(api: "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"),
-        groqAccount(api: "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")
+    static let llmAccounts: [apiAccount] = [
+        apiAccount(api: "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"),
+        apiAccount(api: "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"),
+        apiAccount(api: "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")
     ]
+    static let llmUrl: String = "https://api.groq.com/openai/v1/chat/completions"
 }
 
+struct openRouterSettings {
+    static let modelName: String = "google/gemini-2.0-flash-exp:free"
+    static let llmAccounts: [apiAccount] = [
+        apiAccount(api: "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"),
+        apiAccount(api: "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"),
+        apiAccount(api: "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")
+    ]
+    static let llmUrl: String = "https://openrouter.ai/api/v1/chat/completions"
+}

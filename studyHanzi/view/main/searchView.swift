@@ -239,7 +239,7 @@ struct searchView: View {
                 .foregroundColor(isDarkMode ? .white : .blue)
         }
         .padding()
-        .background(isDarkMode ? Color.black : Color.white)
+        .background(isDarkMode ? .black.opacity(0.3) : .white.opacity(0.3))
         .cornerRadius(8)
         .frame(maxWidth: .infinity, alignment: .trailing)
     }

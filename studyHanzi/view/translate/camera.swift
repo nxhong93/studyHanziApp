@@ -49,9 +49,9 @@ struct CameraView: View {
                     }) {
                         Text(useLlmVision ? "LLM" : "OCR")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(isDarkMode ? .black : .white)
                             .padding(10)
-                            .background(Color.black.opacity(0.7))
+                            .background(isDarkMode ? .white.opacity(0.3) : .black.opacity(0.3))
                             .cornerRadius(25)
                     }
                     .padding(.top, 20)
