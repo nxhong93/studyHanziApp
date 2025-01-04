@@ -20,7 +20,7 @@ class SearchViewModel: ObservableObject {
     var configuration: TranslationSession.Configuration?
     var dictionary: [WordEntry] = CSVHelper.loadCSV(fileName: csvConfig.csvFileName)
     var resultManager: UndoManager? = UndoManager()
-    let llmApi = llmService()
+    let llmApi = cloudfareService()
 
     func performSearch(searchText: String, selectedSearchType: SearchType) {
         let trimmedText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)

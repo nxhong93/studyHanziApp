@@ -15,16 +15,21 @@ struct CameraView: View {
     @State private var cameraConfiguration: TranslationSession.Configuration?
     @State private var isLoading = false
     @StateObject private var cameraModel = CameraModel()
-    
+
     @Binding var isCameraActive: Bool
     @Binding var searchResults: [String]
     @Binding var isDarkMode: Bool
-    
+
+    @State private var useLlmVision: Bool = false
+
     var body: some View {
         ZStack {
-            CameraPreview(session: cameraModel.session, isDarkMode: isDarkMode) { texts in
-                handleRecognizedTexts(texts)
-            }
+            CameraPreview(session: cameraModel.session, isDarkMode: isDarkMode, cameraModel: cameraModel, isLoading: { isLoading in
+                self.isLoading = isLoading
+            }, onRecognizeText: { result in
+                isLoading = result.loading
+                self.handleRecognizedTexts(result.texts)
+            })
             .edgesIgnoringSafeArea(.all)
             
             if isLoading {
@@ -34,6 +39,26 @@ struct CameraView: View {
                     .background(Color.black.opacity(0.7))
                     .cornerRadius(10)
                     .foregroundColor(.white)
+            }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        useLlmVision.toggle()
+                    }) {
+                        Text(useLlmVision ? "LLM" : "OCR")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(25)
+                    }
+                    .padding(.top, 20)
+                    .padding(.trailing, 20)
+                }
+
+                Spacer()
             }
         }
         .onAppear {
@@ -51,40 +76,50 @@ struct CameraView: View {
                 scene.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
             }
         }
+        .onChange(of: useLlmVision) { _, newValue in
+            cameraModel.useLlmVision = newValue
+        }
         .translationTask(cameraConfiguration) { session in
             searchResults.removeAll()
-            if recognizedTexts.count > 0 {
-                Task { @MainActor in
-                    isLoading = true
-                    do {
-                        for textOrigin in recognizedTexts {
-                            if isChinese(textOrigin) {
-                                searchResults.append(String(repeating: "-", count: 40))
-                                searchResults.append(textOrigin)
-                                let response = try await session.translate(textOrigin)
-                                searchResults.append(response.targetText)
+            if !useLlmVision {
+                if recognizedTexts.count > 0 {
+                    Task { @MainActor in
+                        do {
+                            for textOrigin in recognizedTexts {
+                                if isChinese(textOrigin) {
+                                    searchResults.append(String(repeating: "-", count: 40))
+                                    searchResults.append(textOrigin)
+                                    let response = try await session.translate(textOrigin)
+                                    searchResults.append(response.targetText)
+                                }
                             }
+                        } catch {
+                            searchResults.append("Lỗi dịch văn bản.")
                         }
-                    } catch {
-                        searchResults.append("Lỗi dịch văn bản.")
+                        isLoading = false
+                        isCameraActive = false
                     }
-                    isLoading = false
-                    isCameraActive = false
                 }
             }
         }
     }
-    
+
     private func handleRecognizedTexts(_ texts: [String]) {
-        recognizedTexts = texts
-        let newConfig = TranslationSession.Configuration(
-            source: .init(identifier: "zh-Hans"),
-            target: .init(identifier: "vi")
-        )
-        if cameraConfiguration == nil || cameraConfiguration != newConfig {
-            cameraConfiguration = newConfig
+        if !useLlmVision {
+            recognizedTexts = texts
+            let newConfig = TranslationSession.Configuration(
+                source: .init(identifier: "zh-Hans"),
+                target: .init(identifier: "vi")
+            )
+            if cameraConfiguration == nil || cameraConfiguration != newConfig {
+                cameraConfiguration = newConfig
+            } else {
+                cameraConfiguration?.invalidate()
+            }
         } else {
-            cameraConfiguration?.invalidate()
+            searchResults = texts
+            isCameraActive = false
         }
     }
 }
+

@@ -14,7 +14,7 @@ struct llmModel {
     let name: String
 }
 
-struct llmAccount {
+struct cloudfareAccount {
     let accoundId: String
     let token: String
 }
@@ -30,16 +30,16 @@ struct llmAccount {
 //    "@hf/thebloke/zephyr-7b-beta-awq",
 //]
 
-struct llmConfig {
+struct cloudfareConfig {
     static let model_name: String = "@hf/nousresearch/hermes-2-pro-mistral-7b"
-    static let llm_acc: [llmAccount] = [
-        llmAccount(accoundId: "37ee5390db6343179564a8597dd5f8b8", token: "8j58LQhSA05iLnxj3LOWz1L0D4gWum0tbXa80nzA"),
-        llmAccount(accoundId: "c2aad90a2fc36cc3563418daf24dd2c6", token: "UKV7SeFZWUdz4C2nsjlUPqmJDwAZxXpE_GfKa45Y"),
-        llmAccount(accoundId: "c28b912ed79aef66692a02df93ef140a", token: "P03kbSkgEJhlZAnKQ7OijsK7JlALwwVzwjxjIFyz")
+    static let llm_acc: [cloudfareAccount] = [
+        cloudfareAccount(accoundId: "37ee5390db6343179564a8597dd5f8b8", token: "8j58LQhSA05iLnxj3LOWz1L0D4gWum0tbXa80nzA"),
+        cloudfareAccount(accoundId: "c2aad90a2fc36cc3563418daf24dd2c6", token: "UKV7SeFZWUdz4C2nsjlUPqmJDwAZxXpE_GfKa45Y"),
+        cloudfareAccount(accoundId: "c28b912ed79aef66692a02df93ef140a", token: "P03kbSkgEJhlZAnKQ7OijsK7JlALwwVzwjxjIFyz")
     ]
 }
 
-struct llmLanguageConfig {
+struct cloudfareLanguageConfig {
     let systemPrompt: String
     let userPrompt: String
     
@@ -60,5 +60,28 @@ enum CustomError: Error {
     case noData
     case invalidResponseFormat
     case apiError(String)
+}
+
+struct groqAccount {
+    let api: String
+}
+
+struct cloudgroqConfig {
+    let modelName: String
+    let llmAccounts: groqAccount?
+    let systemPrompt: String
+    let userPrompt: String
+    let inputImage: String
+}
+
+
+
+struct cloudgroqSettings {
+    static let modelName: String = "llama-3.2-90b-vision-preview"
+    static let llmAccounts: [groqAccount] = [
+        groqAccount(api: "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"),
+        groqAccount(api: "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"),
+        groqAccount(api: "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")
+    ]
 }
 

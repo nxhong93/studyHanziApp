@@ -17,12 +17,10 @@ struct SettingsMenu: View {
 
     var body: some View {
         Menu {
-            // Dark Mode Toggle
             Toggle(isOn: $isDarkMode) {
                 Label("Dark Mode", systemImage: "moon.fill")
             }
 
-            // Logout Button
             Button(role: .destructive, action: {
                 showingLogoutAlert = true
             }) {
