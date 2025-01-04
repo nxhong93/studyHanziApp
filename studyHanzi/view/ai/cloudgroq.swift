@@ -14,9 +14,10 @@ class CloudgroqService: ObservableObject {
         imageBase: String,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
-        let config = cloudgroqConfig(
+        let config = llmConfig(
             modelName: cloudgroqSettings.modelName,
             llmAccounts: cloudgroqSettings.llmAccounts.randomElement(),
+            modelUrl: cloudgroqSettings.llmUrl,
             systemPrompt: "Dịch ảnh sang tiếng Việt",
             userPrompt: "Dịch ngắn gọn không giải thích trong ảnh này có chữ tiếng trung nào hãy chuyển sang tiếng Việt với format là 'tiếng trung: dịch tiếng việt'",
             inputImage: imageBase
@@ -24,13 +25,13 @@ class CloudgroqService: ObservableObject {
         self.sendLlmRequest(with: config, completion: completion)
     }
     
-    public func sendLlmRequest(with param: cloudgroqConfig, completion: @escaping (Result<String, Error>) -> Void) {
+    public func sendLlmRequest(with param: llmConfig, completion: @escaping (Result<String, Error>) -> Void) {
         guard let randomAccount = param.llmAccounts else {
             completion(.failure(CustomError.noAccountsAvailable))
             return
         }
         
-        let urlString = "https://api.groq.com/openai/v1/chat/completions"
+        let urlString = param.modelUrl
         guard let url = URL(string: urlString) else {
             completion(.failure(CustomError.invalidURL))
             return
