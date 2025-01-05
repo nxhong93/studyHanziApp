@@ -206,7 +206,6 @@ class CameraViewController: UIViewController {
         if cameraModel.useLlmVision {
             guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
             let base64String = imageData.base64EncodedString()
-            
             cloudService?.translateImageWithLLMVision(imageBase: base64String) { result in
                 DispatchQueue.main.async {
                     switch result {
@@ -254,9 +253,20 @@ extension CameraViewController: PHPickerViewControllerDelegate {
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
         picker.dismiss(animated: true, completion: nil)
         guard let result = results.first else { return }
-        result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] (object, error) in
+        isLoading(true)
+
+        result.itemProvider.loadObject(ofClass: UIImage.self) { (object, error) in
+            if let error = error {
+                print("Lỗi chọn ảnh: \(error.localizedDescription)")
+                self.isLoading(false)
+                return
+            }
             if let image = object as? UIImage {
-                self?.processImage(image)
+                DispatchQueue.main.async {
+                    self.processImage(image)
+                }
+            } else {
+                self.isLoading(false)
             }
         }
     }
