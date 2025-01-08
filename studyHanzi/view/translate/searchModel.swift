@@ -48,7 +48,7 @@ class SearchViewModel: ObservableObject {
                         } else {
                             self.configuration?.invalidate()
                         }
-                        newSearchResults = ["Translation successful."]
+                        newSearchResults = ["..."]
                     } else {
                         newSearchResults = ["Translation configuration failed."]
                     }
@@ -65,23 +65,31 @@ class SearchViewModel: ObservableObject {
             searchSuggestions.removeAll()
             self.searchText = ""
         case .llm:
-            isLoading = true
-            llmApi.runLlmQuery(inputText: trimmedText) { [weak self] result in
-                DispatchQueue.main.async {
-                    guard let self = self else { return }
-                    let newSearchResults: [String]
-                    switch result {
-                    case .success(let response):
-                        newSearchResults = [trimmedText, response]
-                    case .failure(let error):
-                        newSearchResults = ["LLM error: \(error.localizedDescription)"]
+            llmApi.runLlmQuery(
+                inputText: searchText,
+                onPartialResult: { [weak self] partialResult in
+                    DispatchQueue.main.async {
+                        self?.isLoading = false
+                        if let lastResult = self?.searchResults.first {
+                            self?.searchResults = [lastResult + partialResult]
+                        } else {
+                            self?.searchResults = [searchText + "\n", partialResult]
+                        }
                     }
-                    self.registerUndo(newSearchResults)
-                    self.searchResults = newSearchResults
-                    self.isLoading = false
-                    self.searchText = ""
+                },
+                onComplete: { [weak self] result in
+                    DispatchQueue.main.async {
+                        self?.isLoading = false
+                        switch result {
+                        case .success:
+                            print("Stream completed")
+                        case .failure(let error):
+                            print("Error: \(error.localizedDescription)")
+                        }
+                    }
                 }
-            }
+            )
+            clearSearch()
         case .camera:
             clearSearch()
         }

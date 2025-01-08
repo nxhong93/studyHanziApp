@@ -104,7 +104,7 @@ class CameraViewController: UIViewController {
     var cameraModel: CameraModel?
     var isLoading: (Bool) -> Void
     
-    private var cloudService: openRouterService?
+    private var cloudService: CloudgroqService?
 
     init(session: AVCaptureSession?, onRecognizeText: @escaping (CameraPreviewResult) -> Void, isDarkMode: Bool, cameraModel: CameraModel?, isLoading: @escaping (Bool) -> Void) {
         self.session = session
@@ -122,7 +122,7 @@ class CameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        cloudService = openRouterService()
+        cloudService = CloudgroqService()
         setupCameraPreview()
         setupControls()
         addPinchToZoomGesture()

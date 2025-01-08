@@ -55,8 +55,12 @@ struct searchView: View {
                         suggestionList
                     }
                     if viewModel.isLoading {
-                        ProgressView("...")
+                        ProgressView("Đang xử lý...")
+                            .progressViewStyle(CircularProgressViewStyle())
                             .padding()
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(10)
+                            .foregroundColor(.white)
                     } else {
                         resultView
                     }
@@ -432,6 +436,7 @@ struct searchView: View {
         recognitionRequest?.endAudio()
         isRecording = false
         viewModel.performSearch(searchText: viewModel.searchText, selectedSearchType: selectedSearchType)
+        viewModel.searchText = ""
     }
     
     private func readText(_ text: String, in language: String) {

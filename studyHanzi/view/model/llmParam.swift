@@ -15,7 +15,7 @@ struct llmModel {
 }
 
 struct cloudfareAccount {
-    let accoundId: String
+    let accountId: String
     let token: String
 }
 
@@ -31,12 +31,13 @@ struct cloudfareAccount {
 //]
 
 struct cloudfareConfig {
-    static let model_name: String = "@hf/nousresearch/hermes-2-pro-mistral-7b"
-    static let llm_acc: [cloudfareAccount] = [
-        cloudfareAccount(accoundId: "37ee5390db6343179564a8597dd5f8b8", token: "8j58LQhSA05iLnxj3LOWz1L0D4gWum0tbXa80nzA"),
-        cloudfareAccount(accoundId: "c2aad90a2fc36cc3563418daf24dd2c6", token: "UKV7SeFZWUdz4C2nsjlUPqmJDwAZxXpE_GfKa45Y"),
-        cloudfareAccount(accoundId: "c28b912ed79aef66692a02df93ef140a", token: "P03kbSkgEJhlZAnKQ7OijsK7JlALwwVzwjxjIFyz")
+    static let modelName: String = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+    static let llmAcc: [cloudfareAccount] = [
+        cloudfareAccount(accountId: "37ee5390db6343179564a8597dd5f8b8", token: "8j58LQhSA05iLnxj3LOWz1L0D4gWum0tbXa80nzA"),
+        cloudfareAccount(accountId: "c2aad90a2fc36cc3563418daf24dd2c6", token: "UKV7SeFZWUdz4C2nsjlUPqmJDwAZxXpE_GfKa45Y"),
+        cloudfareAccount(accountId: "c28b912ed79aef66692a02df93ef140a", token: "P03kbSkgEJhlZAnKQ7OijsK7JlALwwVzwjxjIFyz")
     ]
+    static let llmUrl: String = "https://api.cloudflare.com/client/v4/accounts/"
 }
 
 struct cloudfareLanguageConfig {
@@ -59,7 +60,9 @@ enum CustomError: Error {
     case invalidURL
     case noData
     case invalidResponseFormat
+    case emptyResponse
     case apiError(String)
+    case invalidStreamData
 }
 
 struct apiAccount {
@@ -80,7 +83,8 @@ struct cloudgroqSettings {
     static let llmAccounts: [apiAccount] = [
         apiAccount(api: "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"),
         apiAccount(api: "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"),
-        apiAccount(api: "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")
+        apiAccount(api: "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"),
+        apiAccount(api: "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")
     ]
     static let llmUrl: String = "https://api.groq.com/openai/v1/chat/completions"
 }
@@ -90,7 +94,8 @@ struct openRouterSettings {
     static let llmAccounts: [apiAccount] = [
         apiAccount(api: "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"),
         apiAccount(api: "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"),
-        apiAccount(api: "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")
+        apiAccount(api: "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"),
+        apiAccount(api: "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")
     ]
     static let llmUrl: String = "https://openrouter.ai/api/v1/chat/completions"
 }

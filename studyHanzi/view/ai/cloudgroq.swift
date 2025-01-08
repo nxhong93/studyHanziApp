@@ -19,7 +19,7 @@ class CloudgroqService: ObservableObject {
             llmAccounts: cloudgroqSettings.llmAccounts.randomElement(),
             modelUrl: cloudgroqSettings.llmUrl,
             systemPrompt: "Dịch ảnh sang tiếng Việt",
-            userPrompt: "Dịch ngắn gọn không giải thích trong ảnh này có chữ tiếng trung nào hãy chuyển sang tiếng Việt với format là 'tiếng trung: dịch tiếng việt'",
+            userPrompt: "Dịch ngắn gọn không giải thích trong ảnh này có chữ tiếng trung nào hãy chuyển sang tiếng Việt với format là 'tiếng trung\ndịch tiếng việt'",
             inputImage: imageBase
         )
         self.sendLlmRequest(with: config, completion: completion)
