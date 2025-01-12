@@ -103,11 +103,7 @@ class SearchViewModel: ObservableObject {
     }
 
     func redoStroke() {
-        if resultManager?.canRedo == true {
-            resultManager?.redo()
-        } else {
-            print("Không thể redo: Không có trạng thái nào khả dụng.")
-        }
+        resultManager?.redo()
     }
 
 
