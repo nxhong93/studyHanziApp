@@ -12,7 +12,6 @@ import Translation
 
 class SearchViewModel: ObservableObject {
     @Published var searchResults: [String] = []
-    @Published var previousSearchResults: [String] = []
     @Published var isLoading: Bool = false
     @Published var searchSuggestions: [String] = []
     @Published var searchText: String = ""
@@ -32,8 +31,6 @@ class SearchViewModel: ObservableObject {
         let currentResults = searchResults
         registerUndo(currentResults)
 
-        previousSearchResults = currentResults
-
         isLoading = true
 
         switch selectedSearchType {
@@ -52,14 +49,12 @@ class SearchViewModel: ObservableObject {
                     } else {
                         newSearchResults = ["Translation configuration failed."]
                     }
-                    self.registerUndo(newSearchResults)
                     self.searchResults = newSearchResults
                     self.isLoading = false
                 }
             }
         case .offline:
             let newSearchResults = CSVHelper.searchWord(in: dictionary, for: trimmedText)
-            registerUndo(newSearchResults)
             searchResults = newSearchResults
             isLoading = false
             searchSuggestions.removeAll()
@@ -98,10 +93,9 @@ class SearchViewModel: ObservableObject {
     func registerUndo(_ newValue: [String]) {
         let oldValue = searchResults
         resultManager?.registerUndo(withTarget: self) { target in
+            target.registerUndo(newValue)
             target.searchResults = oldValue
-            target.registerUndo(oldValue)
         }
-        searchResults = newValue
     }
 
     func backStroke() {
@@ -109,8 +103,13 @@ class SearchViewModel: ObservableObject {
     }
 
     func redoStroke() {
-        resultManager?.redo()
+        if resultManager?.canRedo == true {
+            resultManager?.redo()
+        } else {
+            print("Không thể redo: Không có trạng thái nào khả dụng.")
+        }
     }
+
 
     func clearSearch() {
         registerUndo([])
@@ -118,7 +117,3 @@ class SearchViewModel: ObservableObject {
         searchText = ""
     }
 }
-
-
-
-
