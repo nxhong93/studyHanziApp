@@ -104,7 +104,8 @@ class CameraViewController: UIViewController {
     var cameraModel: CameraModel?
     var isLoading: (Bool) -> Void
     
-    private var cloudService: cloudgroqService?
+    private var cloudService: openRouterService?
+    private var groqService: cloudgroqService?
 
     init(session: AVCaptureSession?, onRecognizeText: @escaping (CameraPreviewResult) -> Void, isDarkMode: Bool, cameraModel: CameraModel?, isLoading: @escaping (Bool) -> Void) {
         self.session = session
@@ -122,7 +123,8 @@ class CameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        cloudService = cloudgroqService()
+        cloudService = openRouterService()
+        groqService = cloudgroqService()
         setupCameraPreview()
         setupControls()
         addPinchToZoomGesture()
@@ -225,6 +227,7 @@ class CameraViewController: UIViewController {
                             print("Stream completed")
                         case .failure(let error):
                             print("Error: \(error.localizedDescription)")
+                            self.callGroqAPI(with: image)
                         }
                     }
                 }
@@ -232,6 +235,13 @@ class CameraViewController: UIViewController {
         } else {
             guard let cgImage = image.cgImage else { return }
             let request = VNRecognizeTextRequest { (request, error) in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        print("Text recognition error: \(error.localizedDescription)")
+                        self.onRecognizeText?(CameraPreviewResult(loading: false, texts: ["Error recognizing text: \(error.localizedDescription)"]))
+                    }
+                    return
+                }
                 guard let observations = request.results as? [VNRecognizedTextObservation] else { return }
                 let recognizedTexts = observations.compactMap { $0.topCandidates(1).first?.string }
                 DispatchQueue.main.async {
@@ -250,6 +260,34 @@ class CameraViewController: UIViewController {
                 }
             }
         }
+    }
+    private func callGroqAPI(with image: UIImage) {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
+        let base64String = imageData.base64EncodedString()
+
+        isLoading(true)
+        var accumulatedText = ""
+        groqService?.translateImageWithLLMVision(
+            imageBase: base64String,
+            onPartialResult: { partialResult in
+                DispatchQueue.main.async {
+                    accumulatedText += partialResult
+                    self.onRecognizeText?(CameraPreviewResult(loading: false, texts: [accumulatedText]))
+                }
+            },
+            onComplete: { result in
+                DispatchQueue.main.async {
+                    self.isLoading(false)
+                    switch result {
+                    case .success:
+                        print("Stream completed")
+                    case .failure(let error):
+                        print("Error: \(error.localizedDescription)")
+                        self.onRecognizeText?(CameraPreviewResult(loading: false, texts: ["Error recognizing text: \(error.localizedDescription)"]))
+                    }
+                }
+            }
+        )
     }
 }
 
@@ -284,8 +322,4 @@ extension CameraViewController: PHPickerViewControllerDelegate {
         }
     }
 }
-
-
-
-
 

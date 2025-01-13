@@ -81,6 +81,7 @@ struct CameraView: View {
         }
         .translationTask(cameraConfiguration) { session in
             searchResults.removeAll()
+            
             if !useLlmVision {
                 if recognizedTexts.count > 0 {
                     Task { @MainActor in
@@ -94,17 +95,25 @@ struct CameraView: View {
                                 }
                             }
                         } catch {
-                            searchResults.append("Lỗi dịch văn bản.")
+                            searchResults.append("Fail translate.")
                         }
                         isLoading = false
                         isCameraActive = false
                     }
+                } else {
+                    searchResults.append("No chinese in images.")
+                    isLoading = false
+                    isCameraActive = false
                 }
             }
         }
     }
 
     private func handleRecognizedTexts(_ texts: [String]) {
+        if texts.isEmpty || texts.contains(where: { $0.lowercased().contains("error recognizing text") }) {
+            isCameraActive = false
+            return
+        }
         if !useLlmVision {
             recognizedTexts = texts
             let newConfig = TranslationSession.Configuration(

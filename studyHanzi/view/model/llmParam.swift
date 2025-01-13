@@ -35,7 +35,8 @@ struct cloudfareConfig {
     static let llmAcc: [cloudfareAccount] = [
         cloudfareAccount(accountId: "37ee5390db6343179564a8597dd5f8b8", token: "8j58LQhSA05iLnxj3LOWz1L0D4gWum0tbXa80nzA"),
         cloudfareAccount(accountId: "c2aad90a2fc36cc3563418daf24dd2c6", token: "UKV7SeFZWUdz4C2nsjlUPqmJDwAZxXpE_GfKa45Y"),
-        cloudfareAccount(accountId: "c28b912ed79aef66692a02df93ef140a", token: "P03kbSkgEJhlZAnKQ7OijsK7JlALwwVzwjxjIFyz")
+        cloudfareAccount(accountId: "c28b912ed79aef66692a02df93ef140a", token: "P03kbSkgEJhlZAnKQ7OijsK7JlALwwVzwjxjIFyz"),
+        cloudfareAccount(accountId: "99fea5064def9e483c53b281b780c524", token: "2IovbWcGky5T7JjRuRrc_fYqP9dG085ySpygCmcs")
     ]
     static let llmUrl: String = "https://api.cloudflare.com/client/v4/accounts/"
 }
