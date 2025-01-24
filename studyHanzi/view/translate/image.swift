@@ -104,8 +104,7 @@ class CameraViewController: UIViewController {
     var cameraModel: CameraModel?
     var isLoading: (Bool) -> Void
     
-    private var cloudService: openRouterService?
-    private var groqService: cloudgroqService?
+    private var cloudService: cloudgroqService?
 
     init(session: AVCaptureSession?, onRecognizeText: @escaping (CameraPreviewResult) -> Void, isDarkMode: Bool, cameraModel: CameraModel?, isLoading: @escaping (Bool) -> Void) {
         self.session = session
@@ -123,8 +122,7 @@ class CameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        cloudService = openRouterService()
-        groqService = cloudgroqService()
+        cloudService = cloudgroqService()
         setupCameraPreview()
         setupControls()
         addPinchToZoomGesture()
@@ -227,7 +225,6 @@ class CameraViewController: UIViewController {
                             print("Stream completed")
                         case .failure(let error):
                             print("Error: \(error.localizedDescription)")
-                            self.callGroqAPI(with: image)
                         }
                     }
                 }
@@ -260,34 +257,6 @@ class CameraViewController: UIViewController {
                 }
             }
         }
-    }
-    private func callGroqAPI(with image: UIImage) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-        let base64String = imageData.base64EncodedString()
-
-        isLoading(true)
-        var accumulatedText = ""
-        groqService?.translateImageWithLLMVision(
-            imageBase: base64String,
-            onPartialResult: { partialResult in
-                DispatchQueue.main.async {
-                    accumulatedText += partialResult
-                    self.onRecognizeText?(CameraPreviewResult(loading: false, texts: [accumulatedText]))
-                }
-            },
-            onComplete: { result in
-                DispatchQueue.main.async {
-                    self.isLoading(false)
-                    switch result {
-                    case .success:
-                        print("Stream completed")
-                    case .failure(let error):
-                        print("Error: \(error.localizedDescription)")
-                        self.onRecognizeText?(CameraPreviewResult(loading: false, texts: ["Error recognizing text: \(error.localizedDescription)"]))
-                    }
-                }
-            }
-        )
     }
 }
 

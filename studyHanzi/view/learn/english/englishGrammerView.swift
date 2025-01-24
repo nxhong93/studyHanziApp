@@ -9,7 +9,7 @@ import SwiftUI
 
 struct englishGrammerView: View {
     @State var level: String
-    @State var isDarkMode: Bool
+    @Binding var isDarkMode: Bool
     
     var body: some View {
         Text("Hello, grammer!")
@@ -19,6 +19,6 @@ struct englishGrammerView: View {
 #Preview {
     englishGrammerView(
         level: "beginner",
-        isDarkMode: true
+        isDarkMode: .constant(true)
     )
 }

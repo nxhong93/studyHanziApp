@@ -113,8 +113,8 @@ class cloudgroqService {
             modelUrl: cloudgroqSettings.llmUrl,
             systemPrompt: "Dịch ảnh sang tiếng Việt",
             userPrompt: """
-                        Dịch ngắn gọn không giải thích trong ảnh này có chữ tiếng Trung nào hãy chuyển sang tiếng Việt với format là:
-                        'tiếng Trung\ndịch tiếng Việt'
+                        Dịch ngắn gọn không giải thích trong ảnh này có chữ tiếng Trung nào hãy dịch sang tiếng Việt với format là:
+                        'tiếng Trung \npinyin \ndịch tiếng Việt'
                         """,
             inputImage: imageBase
         )

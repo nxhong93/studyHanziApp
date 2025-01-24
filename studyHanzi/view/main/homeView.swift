@@ -9,7 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Binding var isLoggedIn: Bool
-    @State private var isDarkMode: Bool = false
+    @State private var isDarkMode: Bool = true
     @State private var isMenuOpen: Bool = false
     var loggedUsername: String = ""
     var username: String {

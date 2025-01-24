@@ -8,10 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		2824CF132D11B3A9002A067B /* Zinnia-Swift in Frameworks */ = {isa = PBXBuildFile; productRef = 2824CF122D11B3A9002A067B /* Zinnia-Swift */; };
+		28BB2ECC2D3BEB1C002FE905 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 28BB2ECB2D3BEB1C002FE905 /* SQLite */; };
+		28BBF8B52D3BE99F0005D38E /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 28BBF8B42D3BE99F0005D38E /* ZIPFoundation */; };
 		28BFD2E52CE96C7900903EB4 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 28BFD2E42CE96C7900903EB4 /* FirebaseCore */; };
 		28BFD2E82CE9727300903EB4 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 28BFD2E72CE9727300903EB4 /* GoogleSignIn */; };
 		28BFD2EA2CE9727C00903EB4 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 28BFD2E92CE9727C00903EB4 /* GoogleSignInSwift */; };
 		28BFD2EE2CE9795B00903EB4 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 28BFD2ED2CE9795B00903EB4 /* FirebaseAuth */; };
+		28D0AB902D3E954100FFA200 /* HTMLString in Frameworks */ = {isa = PBXBuildFile; productRef = 28D0AB8F2D3E954100FFA200 /* HTMLString */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,7 +80,10 @@
 				28BFD2E52CE96C7900903EB4 /* FirebaseCore in Frameworks */,
 				28BFD2E82CE9727300903EB4 /* GoogleSignIn in Frameworks */,
 				28BFD2EE2CE9795B00903EB4 /* FirebaseAuth in Frameworks */,
+				28BB2ECC2D3BEB1C002FE905 /* SQLite in Frameworks */,
 				2824CF132D11B3A9002A067B /* Zinnia-Swift in Frameworks */,
+				28D0AB902D3E954100FFA200 /* HTMLString in Frameworks */,
+				28BBF8B52D3BE99F0005D38E /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +157,9 @@
 				28BFD2E92CE9727C00903EB4 /* GoogleSignInSwift */,
 				28BFD2ED2CE9795B00903EB4 /* FirebaseAuth */,
 				2824CF122D11B3A9002A067B /* Zinnia-Swift */,
+				28BBF8B42D3BE99F0005D38E /* ZIPFoundation */,
+				28BB2ECB2D3BEB1C002FE905 /* SQLite */,
+				28D0AB8F2D3E954100FFA200 /* HTMLString */,
 			);
 			productName = studyHanzi;
 			productReference = 28A127BC2CE87C4F00B5F008 /* studyHanzi.app */;
@@ -238,6 +247,9 @@
 				28A127EC2CE8A60600B5F008 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				28BFD2E62CE9725200903EB4 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				2824CF112D11B34E002A067B /* XCRemoteSwiftPackageReference "zinnia-swift" */,
+				28BBF8B32D3BE9110005D38E /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				28AA17C52D3BEA6B00E189FA /* XCRemoteSwiftPackageReference "SQLite.swift" */,
+				28D0AB8E2D3E952B00FFA200 /* XCRemoteSwiftPackageReference "HTMLString" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 28A127BD2CE87C4F00B5F008 /* Products */;
@@ -632,12 +644,36 @@
 				minimumVersion = 11.5.0;
 			};
 		};
+		28AA17C52D3BEA6B00E189FA /* XCRemoteSwiftPackageReference "SQLite.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stephencelis/SQLite.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.15.3;
+			};
+		};
+		28BBF8B32D3BE9110005D38E /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
 		28BFD2E62CE9725200903EB4 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 8.0.0;
+			};
+		};
+		28D0AB8E2D3E952B00FFA200 /* XCRemoteSwiftPackageReference "HTMLString" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alexaubry/HTMLString.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -647,6 +683,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2824CF112D11B34E002A067B /* XCRemoteSwiftPackageReference "zinnia-swift" */;
 			productName = "Zinnia-Swift";
+		};
+		28BB2ECB2D3BEB1C002FE905 /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28AA17C52D3BEA6B00E189FA /* XCRemoteSwiftPackageReference "SQLite.swift" */;
+			productName = SQLite;
+		};
+		28BBF8B42D3BE99F0005D38E /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28BBF8B32D3BE9110005D38E /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
 		};
 		28BFD2E42CE96C7900903EB4 /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -667,6 +713,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 28A127EC2CE8A60600B5F008 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		28D0AB8F2D3E954100FFA200 /* HTMLString */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28D0AB8E2D3E952B00FFA200 /* XCRemoteSwiftPackageReference "HTMLString" */;
+			productName = HTMLString;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
