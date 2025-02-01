@@ -120,7 +120,7 @@ class AnkiFileManager {
 
         if filename.contains("englishVocab") {
             frontText = "\(parts[7])\n\(parts[2])\n\(parts[3])".hideContentBetweenDelimiters()
-            backText = "\(parts[1])\n\(parts[10])\n\(parts[6])"
+            backText = "\(parts[1])(\(parts[6]))\n\(parts[10])"
         } else {
             frontText = parts[0]
             backText = parts[1]

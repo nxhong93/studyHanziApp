@@ -6,8 +6,58 @@
 //
 
 import SwiftUI
+import CoreMotion
 
 
+
+class MotionManager: ObservableObject {
+    private let motionManager = CMMotionManager()
+    @Published var lastShakeTime: Date = Date()
+    @Published var isShaking: Bool = false
+    private var lastAcceleration: CMAcceleration?
+
+    func startShakeDetection(toggleShowAnswer: @escaping () -> Void) {
+        if motionManager.isAccelerometerAvailable {
+            motionManager.accelerometerUpdateInterval = 0.1
+            motionManager.startAccelerometerUpdates(to: .main) { (data, error) in
+                guard let acceleration = data?.acceleration else { return }
+                
+                let shakeThreshold: Double = 1.8
+                let stopThreshold: Double = 0.2
+                let now = Date()
+
+                let totalForce = abs(acceleration.x) + abs(acceleration.y) + abs(acceleration.z)
+
+                if let last = self.lastAcceleration {
+                    let deltaX = abs(acceleration.x - last.x)
+                    let deltaY = abs(acceleration.y - last.y)
+                    let deltaZ = abs(acceleration.z - last.z)
+                    let change = deltaX + deltaY + deltaZ
+
+                    if change > shakeThreshold, !self.isShaking, now.timeIntervalSince(self.lastShakeTime) > 1.0 {
+                        self.isShaking = true
+                        self.lastShakeTime = now
+                        toggleShowAnswer()
+
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            self.isShaking = false
+                        }
+                    }
+                }
+
+                if totalForce < stopThreshold {
+                    self.isShaking = false
+                }
+
+                self.lastAcceleration = acceleration
+            }
+        }
+    }
+
+    func stopShakeDetection() {
+        motionManager.stopAccelerometerUpdates()
+    }
+}
 
 struct flashcardView: View {
     var text: String
@@ -16,6 +66,8 @@ struct flashcardView: View {
     var toggleShowAnswer: () -> Void
     var markCardAsLearned: () -> Void
     var isLearned: Bool
+
+    @StateObject private var motion = MotionManager()
 
     var body: some View {
         ZStack {
@@ -38,7 +90,7 @@ struct flashcardView: View {
                 )
                 .padding()
             }
-
+            
             HStack {
                 Button(action: {
                     withAnimation {
@@ -48,7 +100,7 @@ struct flashcardView: View {
                     Image(systemName: isLearned ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .resizable()
                         .frame(width: 30, height: 30)
-                        .foregroundColor(.gray.opacity(0.7))
+                        .foregroundColor(.gray.opacity(0.5))
                         .padding(10)
                 }
                 .padding(.leading, 20)
@@ -60,14 +112,20 @@ struct flashcardView: View {
                         toggleShowAnswer()
                     }
                 }) {
-                    Image(systemName: showAnswer ? "eye.slash.fill" : "eye.fill")
+                    Image(systemName: showAnswer ? "eye.fill" : "eye.slash.fill")
                         .resizable()
                         .frame(width: 30, height: 30)
-                        .foregroundColor(.gray.opacity(0.7))
+                        .foregroundColor(.gray.opacity(0.5))
                         .padding(10)
                 }
                 .padding(.trailing, 20)
             }
+        }
+        .onAppear {
+            motion.startShakeDetection(toggleShowAnswer: toggleShowAnswer)
+        }
+        .onDisappear {
+            motion.stopShakeDetection()
         }
     }
 }
