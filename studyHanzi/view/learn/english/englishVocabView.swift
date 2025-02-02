@@ -35,17 +35,14 @@ struct englishVocabView: View {
                             showAnswer: showAnswer,
                             toggleShowAnswer: toggleShowAnswer,
                             markCardAsLearned: markCardAsLearned,
-                            isLearned: flashcards[currentIndex].isLearned
+                            isLearned: flashcards[currentIndex].isLearned,
+                            showLearnedCardsOnly: showLearnedCardsOnly,
+                            toggleLearnedState: toggleLearnedState,
+                            showNextCard: showNextCard,
+                            showPreviousCard: showPreviousCard
                         )
                     }
                 }
-                
-                navigationButtons(
-                    showPreviousCard: showPreviousCard,
-                    showNextCard: showNextCard,
-                    toggleLearnedState: toggleLearnedState,
-                    showLearnedCardsOnly: showLearnedCardsOnly
-                )
             }
             .onAppear(perform: loadFlashcards)
             .navigationTitle(
@@ -139,3 +136,4 @@ struct englishVocabView: View {
         AnkiFileManager.shared.updateLearnedStatus(for: flashcards[currentIndex], to: flashcards[currentIndex].isLearned)
     }
 }
+

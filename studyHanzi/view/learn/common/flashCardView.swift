@@ -66,6 +66,10 @@ struct flashcardView: View {
     var toggleShowAnswer: () -> Void
     var markCardAsLearned: () -> Void
     var isLearned: Bool
+    var showLearnedCardsOnly: Bool
+    var toggleLearnedState: () -> Void
+    var showNextCard: () -> Void
+    var showPreviousCard: () -> Void
 
     @StateObject private var motion = MotionManager()
 
@@ -90,91 +94,62 @@ struct flashcardView: View {
                 )
                 .padding()
             }
-            
-            HStack {
-                Button(action: {
-                    withAnimation {
-                        markCardAsLearned()
-                    }
-                }) {
-                    Image(systemName: isLearned ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .resizable()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.gray.opacity(0.5))
-                        .padding(10)
-                }
-                .padding(.leading, 20)
-                
-                Spacer()
 
-                Button(action: {
-                    withAnimation {
-                        toggleShowAnswer()
+            VStack {
+                Spacer()
+                HStack {
+                    Button(action: {
+                        withAnimation {
+                            markCardAsLearned()
+                        }
+                    }) {
+                        Image(systemName: isLearned ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .foregroundColor(.gray.opacity(0.5))
+                            .padding(10)
                     }
-                }) {
-                    Image(systemName: showAnswer ? "eye.fill" : "eye.slash.fill")
-                        .resizable()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.gray.opacity(0.5))
-                        .padding(10)
+                    Spacer()
+                    Button(action: toggleLearnedState) {
+                        Image(systemName: showLearnedCardsOnly ? "checkmark.circle.fill" : "circle.dotted")
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .foregroundColor(.yellow.opacity(0.5))
+                            .padding(10)
+                    }
+                    Spacer()
+                    Button(action: {
+                        withAnimation {
+                            toggleShowAnswer()
+                        }
+                    }) {
+                        Image(systemName: showAnswer ? "eye.fill" : "eye.slash.fill")
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .foregroundColor(.gray.opacity(0.5))
+                            .padding(10)
+                    }
                 }
-                .padding(.trailing, 20)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 30)
             }
         }
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    let threshold: CGFloat = 50
+                    if value.translation.width < -threshold {
+                        withAnimation { showNextCard() }
+                    } else if value.translation.width > threshold {
+                        withAnimation { showPreviousCard() }
+                    }
+                }
+        )
         .onAppear {
             motion.startShakeDetection(toggleShowAnswer: toggleShowAnswer)
         }
         .onDisappear {
             motion.stopShakeDetection()
-        }
-    }
-}
-
-struct navigationButtons: View {
-    var showPreviousCard: () -> Void
-    var showNextCard: () -> Void
-    var toggleLearnedState: () -> Void
-    var showLearnedCardsOnly: Bool
-
-    var body: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Button(action: showPreviousCard) {
-                    Image(systemName: "arrow.left.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.blue)
-                        .opacity(0.7)
-                }
-                .padding(.leading, 20)
-
-                Spacer()
-
-                Button(action: toggleLearnedState) {
-                    Image(systemName: showLearnedCardsOnly ? "checkmark.circle.fill" : "circle.dotted")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.yellow)
-                        .opacity(0.7)
-                }
-                .padding(.horizontal, 20)
-
-                Spacer()
-
-                Button(action: showNextCard) {
-                    Image(systemName: "arrow.right.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.green)
-                        .opacity(0.7)
-                }
-                .padding(.trailing, 20)
-            }
-            .padding(.bottom, 30)
         }
     }
 }
