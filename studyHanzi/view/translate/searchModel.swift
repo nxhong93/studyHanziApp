@@ -65,8 +65,8 @@ class SearchViewModel: ObservableObject {
                 onPartialResult: { [weak self] partialResult in
                     DispatchQueue.main.async {
                         self?.isLoading = false
-                        if let lastResult = self?.searchResults.first {
-                            self?.searchResults = [lastResult + partialResult]
+                        if let lastIndex = self?.searchResults.indices.last {
+                            self?.searchResults[lastIndex].append(partialResult)
                         } else {
                             self?.searchResults = [searchText + "\n", partialResult]
                         }
