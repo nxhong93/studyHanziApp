@@ -16,6 +16,7 @@ struct englishVocabView: View {
     @State private var isLoading = true
     @State private var showAnswer = false
     @State private var showLearnedCardsOnly = false
+    private let tts = GoogleTTS()
 
     var body: some View {
         NavigationView {
@@ -30,7 +31,7 @@ struct englishVocabView: View {
                             .padding()
                     } else {
                         flashcardView(
-                            text: getDisplayedText(),
+                            textLines: processTextForFlashcard(),
                             isDarkMode: isDarkMode,
                             showAnswer: showAnswer,
                             toggleShowAnswer: toggleShowAnswer,
@@ -39,7 +40,8 @@ struct englishVocabView: View {
                             showLearnedCardsOnly: showLearnedCardsOnly,
                             toggleLearnedState: toggleLearnedState,
                             showNextCard: showNextCard,
-                            showPreviousCard: showPreviousCard
+                            showPreviousCard: showPreviousCard,
+                            speakText: speakText
                         )
                     }
                 }
@@ -49,6 +51,40 @@ struct englishVocabView: View {
                 flashcards.isEmpty ? "No Cards Available" : "\(flashcards[currentIndex].id) (\(currentIndex + 1)/\(flashcards.count))"
             )
             .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+    
+    private func processTextForFlashcard() -> [(text: String, voiceText: String, shouldShowSpeaker: Bool)] {
+        let rawText = showAnswer ? flashcards[currentIndex].back : flashcards[currentIndex].front
+        let lines = rawText.components(separatedBy: "\n")
+        
+        if showAnswer {
+            return lines.enumerated().map { (index, line) in
+                (text: line, voiceText: line, shouldShowSpeaker: index == 0)
+            }
+        } else {
+            return lines.enumerated().map { (index, line) in
+                let shouldShowSpeaker = index < 2 && line.contains("___")
+                let processText = line
+                    .replacingOccurrences(of: "→", with: "")
+                    .replacingOccurrences(of: "___", with: "•")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return (text: line, voiceText: processText, shouldShowSpeaker: shouldShowSpeaker)
+            }
+        }
+    }
+    
+    private func speakText(_ text: String) {
+        let randomVoice = ttsVoice.english.name.randomElement() ?? ttsVoice.english.name[0]
+        tts.synthesizeSpeech(text: text, languageCode: ttsVoice.english.rawValue, voiceName: randomVoice) { result in
+            switch result {
+            case .success(let audioData):
+                DispatchQueue.main.async {
+                    tts.playAudio(data: audioData)
+                }
+            case .failure(let error):
+                print("Error: \(error.localizedDescription)")
+            }
         }
     }
 

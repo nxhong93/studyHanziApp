@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreMotion
+import AVFoundation
 
 
 
@@ -60,7 +61,7 @@ class MotionManager: ObservableObject {
 }
 
 struct flashcardView: View {
-    var text: String
+    var textLines: [(text: String, voiceText: String, shouldShowSpeaker: Bool)]
     var isDarkMode: Bool
     var showAnswer: Bool
     var toggleShowAnswer: () -> Void
@@ -70,6 +71,7 @@ struct flashcardView: View {
     var toggleLearnedState: () -> Void
     var showNextCard: () -> Void
     var showPreviousCard: () -> Void
+    var speakText: (String) -> Void
 
     @StateObject private var motion = MotionManager()
 
@@ -78,12 +80,23 @@ struct flashcardView: View {
             VStack {
                 ScrollView {
                     VStack {
-                        Text(text)
-                            .font(.title)
-                            .foregroundColor(isDarkMode ? .white : .black)
-                            .padding()
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        ForEach(textLines, id: \ .text) { line in
+                            HStack {
+                                Text(line.text)
+                                    .font(.title2)
+                                    .foregroundColor(isDarkMode ? .white : .black)
+                                Spacer()
+                                if line.shouldShowSpeaker {
+                                    Button(action: {
+                                        speakText(line.voiceText)
+                                    }) {
+                                        Image(systemName: "speaker.wave.2.fill")
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
                     }
                     .frame(minHeight: 600)
                 }

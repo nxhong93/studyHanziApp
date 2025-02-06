@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+
+
 struct HomeView: View {
     @Binding var isLoggedIn: Bool
     @State private var isDarkMode: Bool = true
@@ -41,6 +43,10 @@ struct HomeView: View {
                     SettingsMenu(isDarkMode: $isDarkMode, isLoggedIn: $isLoggedIn)
                 }
                 .padding(.top)
+                
+                .onAppear {
+                    AnkiFileManager.shared.setUsername(loggedUsername)
+                }
                 
                 TabView {
                     NavigationStack {

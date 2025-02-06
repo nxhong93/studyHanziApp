@@ -28,8 +28,10 @@ func isChinese(_ text: String) -> Bool {
 
 extension String {
     func hideContentBetweenDelimiters() -> String {
-        let withoutDelimiters = self.replacingOccurrences(of: #"\{\{.*?\}\}"#, with: "___", options: .regularExpression)
-        let withNewLines = withoutDelimiters.replacingOccurrences(of: #"<br\s*/?>"#, with: "\n", options: .regularExpression)
+        let withoutNbsp = self.replacingOccurrences(of: "&nbsp", with: "")
+        let withoutDelimiters = withoutNbsp.replacingOccurrences(of: #"\{\{.*?\}\}"#, with: "___", options: .regularExpression)
+        let withoutDelimiters1 = withoutDelimiters.replacingOccurrences(of: #"::.*?\}\}"#, with: "___", options: .regularExpression)
+        let withNewLines = withoutDelimiters1.replacingOccurrences(of: #"<br\s*/?>"#, with: "\n", options: .regularExpression)
         return withNewLines
     }
 }
