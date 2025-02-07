@@ -13,7 +13,7 @@ struct HomeView: View {
     @Binding var isLoggedIn: Bool
     @State private var isDarkMode: Bool = true
     @State private var isMenuOpen: Bool = false
-    var loggedUsername: String = ""
+    @Binding var loggedUsername: String
     var username: String {
         if let atSymbolIndex = loggedUsername.firstIndex(of: "@") {
             return String(loggedUsername[..<atSymbolIndex])
@@ -40,7 +40,9 @@ struct HomeView: View {
                     
                     Spacer()
                     
-                    SettingsMenu(isDarkMode: $isDarkMode, isLoggedIn: $isLoggedIn)
+                    SettingsMenu(isDarkMode: $isDarkMode, isLoggedIn: $isLoggedIn, onLogout: {
+                        loggedUsername = ""
+                    })
                 }
                 .padding(.top)
                 
@@ -83,5 +85,5 @@ struct HomeView: View {
 
 
 #Preview {
-    HomeView(isLoggedIn: .constant(true))
+    HomeView(isLoggedIn: .constant(true), loggedUsername: .constant(""))
 }

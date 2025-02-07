@@ -22,7 +22,12 @@ struct ContentView: View {
     
     var body: some View {
         if isLoggedIn {
-            HomeView(isLoggedIn: $isLoggedIn, loggedUsername: loggedUserName)
+            HomeView(isLoggedIn: $isLoggedIn, loggedUsername: $loggedUserName)
+            .onChange(of: isLoggedIn) { oldValue, newValue in
+                if !newValue {
+                    loggedUserName = ""
+                }
+            }
         } else {
             NavigationStack {
                 ZStack {

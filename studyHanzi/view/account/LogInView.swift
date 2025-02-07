@@ -61,8 +61,11 @@ struct LoginView: View {
                 if let rootViewController = UIApplication.shared.connectedScenes
                     .compactMap({ $0 as? UIWindowScene })
                     .first?.windows.first?.rootViewController {
-                    googleSignInManager.signInWithGoogle(presentingViewController: rootViewController) {
-                        self.isLoggedIn = true
+                    googleSignInManager.signInWithGoogle(presentingViewController: rootViewController) { userEmail in
+                        if let email = userEmail {
+                            self.loggedUserName = email
+                            self.isLoggedIn = true
+                        }
                     }
                 }
             }) {
@@ -104,10 +107,15 @@ struct LoginView: View {
                 return
             }
             
-            loggedUserName = username
+            if let userEmail = authResult?.user.email {
+                loggedUserName = userEmail
+            } else {
+                loggedUserName = username
+            }
+
             errorMessage = nil
             isLoggedIn = true
-            print("Login successful!")
+            print("Login successful! Logged in as \(loggedUserName)")
         }
     }
     

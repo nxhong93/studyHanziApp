@@ -172,7 +172,7 @@ class AnkiFileManager {
         }
 
         frontText = cleanExtraNewlines(frontText)
-        backText = cleanExtraNewlines(backText)
+        backText = cleanExtraNewlines(backText)		
 
         return (frontText, backText)
     }

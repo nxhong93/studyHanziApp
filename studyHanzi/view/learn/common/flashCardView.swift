@@ -80,7 +80,7 @@ struct flashcardView: View {
             VStack {
                 ScrollView {
                     VStack {
-                        ForEach(textLines, id: \ .text) { line in
+                        ForEach(Array(textLines.enumerated()), id: \.offset) { index, line in
                             HStack {
                                 Text(line.text)
                                     .font(.title2)

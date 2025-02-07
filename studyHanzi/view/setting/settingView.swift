@@ -13,6 +13,7 @@ import FirebaseAuth
 struct SettingsMenu: View {
     @Binding var isDarkMode: Bool
     @Binding var isLoggedIn: Bool
+    var onLogout: () -> Void
     @State private var showingLogoutAlert: Bool = false
 
     var body: some View {
@@ -49,15 +50,9 @@ struct SettingsMenu: View {
         do {
             try firebaseAuth.signOut()
             isLoggedIn = false
+            onLogout()
         } catch let signOutError as NSError {
             print("Error signing out: \(signOutError.localizedDescription)")
         }
     }
-}
-
-#Preview {
-    SettingsMenu(
-        isDarkMode: .constant(false),
-        isLoggedIn: .constant(true)
-    )
 }
